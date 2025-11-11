@@ -1,0 +1,76 @@
+{
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules/**/*",
+      "!.yarn/**/*",
+      "!.pixi/**/*",
+      "!.vscode/**/*",
+      "!lib/**/*",
+      "!jupyterdiana/labextension/**/*"
+    ]
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              {
+                "type": false,
+                "source": [
+                  "@jupyterlab/**",
+                  "@lumino/**"
+                ]
+              },
+              {
+                "type": true,
+                "source": [
+                  "@jupyterlab/**",
+                  "@lumino/**"
+                ]
+              },
+              ":BLANK_LINE:",
+              {
+                "type": false,
+                "source": ":PACKAGE:"
+              },
+              {
+                "type": true,
+                "source": ":PACKAGE:"
+              },
+              ":BLANK_LINE:",
+              {
+                "type": false,
+                "source": ":PATH:"
+              },
+              {
+                "type": true,
+                "source": ":PATH:"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "formatter": {
+    "formatWithErrors": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "style": {
+        "noDefaultExport": "off"
+      },
+      "suspicious": {
+        "noConsole": "off"
+      }
+    }
+  }
+}

@@ -1,0 +1,186 @@
+[build-system]
+requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0.3.2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jupyterdiana"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+classifiers = [
+    "Framework :: Jupyter",
+    "Framework :: Jupyter :: JupyterLab",
+    "Framework :: Jupyter :: JupyterLab :: 4",
+    "Framework :: Jupyter :: JupyterLab :: Extensions",
+    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "jupyter_server>=2.4.0,<3"
+]
+dynamic = ["version", "description", "authors", "urls", "keywords"]
+
+[project.optional-dependencies]
+dev = [
+    "jupyterlab>=4",
+]
+test = [
+    "coverage",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-jupyter[server]>=0.6.0"
+]
+
+[tool.hatch.version]
+source = "nodejs"
+
+[tool.hatch.metadata.hooks.nodejs]
+fields = ["description", "authors", "urls", "keywords"]
+
+[tool.hatch.build.targets.sdist]
+artifacts = ["jupyterdiana/labextension"]
+exclude = [".github", "binder"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"jupyterdiana/labextension" = "share/jupyter/labextensions/jupyterdiana"
+"install.json" = "share/jupyter/labextensions/jupyterdiana/install.json"
+"jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
+
+[tool.hatch.build.hooks.version]
+path = "jupyterdiana/_version.py"
+
+[tool.hatch.build.hooks.jupyter-builder]
+dependencies = ["hatch-jupyter-builder>=0.5"]
+build-function = "hatch_jupyter_builder.npm_builder"
+ensured-targets = [
+    "jupyterdiana/labextension/static/style.js",
+    "jupyterdiana/labextension/package.json",
+]
+skip-if-exists = ["jupyterdiana/labextension/static/style.js"]
+
+[tool.hatch.build.hooks.jupyter-builder.build-kwargs]
+build_cmd = "build:prod"
+npm = ["jlpm"]
+
+[tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
+build_cmd = "install:extension"
+npm = ["jlpm"]
+source_dir = "src"
+build_dir = "jupyterdiana/labextension"
+
+[tool.jupyter-releaser.options]
+version_cmd = "hatch version"
+
+[tool.jupyter-releaser.hooks]
+before-build-npm = [
+    "python -m pip install 'jupyterlab>=4.0.0,<5'",
+    "jlpm",
+    "jlpm build:prod"
+]
+before-build-python = ["jlpm clean:all"]
+
+[tool.check-wheel-contents]
+ignore = ["W002"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "B", "C90", "I", "YTT", "PT", "D"]
+ignore = [
+  "D100", # Module docstrings
+  "D107", # Magic methods docstring
+  "D203", # Blank line after class convention is D211
+  "D213", # Docstring summary convention is D212
+]
+
+[tool.mypy]
+strict = true
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["osx-64", "osx-arm64", "linux-64", "win-64"]
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev", "test"], solve-group = "default" }
+
+[tool.pixi.dependencies]
+python = ">=3.12.3"
+jupyter_server = ">=2.4.0,<3"
+nodejs = "*"
+
+[tool.pixi.pypi-dependencies]
+jupyterdiana = { path = ".", editable = true }
+
+[tool.pixi.feature.test.dependencies]
+coverage = "*"
+pytest = ">=8.3.0"
+pytest-asyncio = "*"
+pytest-cov = "*"
+pytest-jupyter-server = ">=0.6.0"
+ruff = ">=0.4.7"
+mypy = ">=1.11.0"
+biome = ">=2.3"
+pre-commit = ">=3.8.0"
+taplo = ">=0.9.2"
+typos = ">=1.31.2"
+
+[tool.pixi.feature.test.tasks]
+# Formatters
+fmt-ruff = "ruff format"
+fmt-biome = "biome format --write"
+fmt-taplo = "taplo format"
+fmt = [
+    { task = "fmt-ruff" },
+    { task = "fmt-biome" },
+    { task = "fmt-taplo" },
+]
+# Checkers
+check-ruff = "ruff check"
+check-ruff-format = "ruff format --check"
+check-mypy = "python -m mypy jupyterdiana/"
+check-biome = "biome check --write --error-on-warnings"
+check-taplo-format = "taplo check"
+check-typos = "typos --write-changes"
+check = [
+  { task = "check-ruff-format" },
+  { task = "check-ruff" },
+  { task = "check-mypy" },
+  { task = "check-biome" },
+  { task = "check-taplo-format" },
+  { task = "check-typos" },
+]
+# Tests
+test-pytest = "python -m pytest"
+test = { depends-on = ["test-pytest"] }
+# All
+ci = { depends-on = ["check", "test"] }
+
+[tool.pixi.feature.dev.dependencies]
+jupyterlab = ">=4.4"
+jupyterlab-lsp = "*"
+python-lsp-server-base = ">=1.11.0"
+python-lsp-ruff = ">=2.2.1"
+pylsp-mypy = ">=0.6.8"
+vscode-langservers-extracted = ">=4.10"
+typescript-language-server = ">=5.1"
+typos-lsp = "*"
+pre-commit = "*"
+
+[tool.pixi.feature.dev.tasks]
+jlpm = "jlpm"
+jlpm-build = "jlpm run build"
+jlpm-watch = "jlpm run watch"
+pre-commit = "pre-commit"
+labextension = "jupyter labextension"
+develop = "jupyter labextension develop --overwrite ."

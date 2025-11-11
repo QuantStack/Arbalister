@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.5.0
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: AntoinePrv@users.noreply.github.com
+author_name: AntoinePrv
+has_ai_rules: false
+has_binder: false
+has_settings: false
+kind: frontend-and-server
+labextension_name: jupyterdiana
+project_short_description: Arrow viewer for Jupyter
+python_name: jupyterdiana
+repository: ''
+test: true
+
