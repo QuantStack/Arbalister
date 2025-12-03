@@ -4,6 +4,8 @@ import pathlib
 import faker
 import pyarrow
 
+import jupyterdiana.arrow as ja
+
 
 def generate_table(num_rows: int) -> pyarrow.Table:
     """Generate a table with fake data."""
@@ -28,30 +30,6 @@ def configure_argparse() -> argparse.ArgumentParser:
     return parser
 
 
-def save_to_file(data: pyarrow.Table, file: pathlib.Path, file_type: str) -> None:
-    """Save to the appropriate format."""
-    match file_type:
-        case "csv":
-            import pyarrow.csv
-
-            pyarrow.csv.write_csv(data, file)
-        case "parquet":
-            import pyarrow.parquet
-
-            pyarrow.parquet.write_table(data, file)
-        case "ipc" | "feather":
-            import pyarrow.feather
-
-            pyarrow.feather.write_feather(data, file)
-        case "orc":
-            import pyarrow.orc
-
-            pyarrow.orc.write_orc(data, file)
-        # TODO: sqlite/ADBC, Avro
-        case _:
-            raise ValueError(f"Unknown file type {file_type}")
-
-
 def main() -> None:
     """Generate data file."""
     parser = configure_argparse()
@@ -63,7 +41,8 @@ def main() -> None:
     if args.output_type is None:
         args.output_type = args.output_file.suffix.removeprefix(".")
 
-    save_to_file(table, file=args.output_file, file_type=args.output_type.strip().lower())
+    write_table = ja.get_table_writer(ja.FileFormat.from_filename(args.output_file))
+    write_table(table, str(args.output_file))
 
 
 if __name__ == "__main__":

@@ -4299,7 +4299,7 @@ packages:
 - pypi: ./
   name: jupyterdiana
   version: 0.1.0
-  sha256: e79ba772b0b409d01264b4edf74d5840e86bbbac8825299cf6fd96c463654414
+  sha256: 413c3d1c99b2b11f37cb50fba912e78cf7007314c4bb7b4e1133648d35b31683
   requires_dist:
   - jupyter-server>=2.4.0,<3
   - pyarrow>=22.0

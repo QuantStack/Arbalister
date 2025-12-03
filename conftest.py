@@ -1,8 +1,11 @@
+from typing import Any
+
 import pytest
 
 pytest_plugins = ("pytest_jupyter.jupyter_server", )
 
 
 @pytest.fixture
-def jp_server_config(jp_server_config):
+def jp_server_config(jp_server_config: Any) -> dict[str, Any]:
+    """Set up jupyter server configuration."""
     return {"ServerApp": {"jpserver_extensions": {"jupyterdiana": True}}}

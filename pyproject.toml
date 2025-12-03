@@ -107,7 +107,7 @@ ignore = [
 [tool.mypy]
 strict = true
 [[tool.mypy.overrides]]
-module = ["pyarrow.*"]
+module = ["pyarrow.*", "jupyterlab.*"]
 ignore_errors = true
 ignore_missing_imports = true
 
@@ -153,7 +153,7 @@ fmt = [
     { task = "fmt-taplo" },
 ]
 # Checkers
-check-ruff = "ruff check"
+check-ruff = "ruff check --extend-exclude '*/jupyter_server_test_config.py' --fix --unsafe-fixes"
 check-ruff-format = "ruff format --check"
 check-mypy = "python -m mypy jupyterdiana/ data/"
 check-biome = "biome check --write --error-on-warnings"
