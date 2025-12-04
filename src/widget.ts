@@ -68,6 +68,7 @@ export class ArrowGridDocumentWidget extends DocumentWidget<ArrowGridViewer> {
     content = content || ArrowGridDocumentWidget._createContent(context);
     reveal = Promise.all([reveal, content.revealed]);
     super({ content, context, reveal, ...other });
+    this.addClass("arrow-viewer-base");
   }
 
   private static _createContent(
