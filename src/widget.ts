@@ -9,14 +9,15 @@ import { ArrowModel } from "./model";
 
 export namespace ArrowGridViewer {
   export interface IOptions {
-    context: DocumentRegistry.Context;
+    path: string;
   }
 }
 
 export class ArrowGridViewer extends Panel {
   constructor(options: ArrowGridViewer.IOptions) {
     super();
-    this._context = options.context;
+    this._options = options;
+
     this.addClass("arrow-viewer");
 
     this._grid = new DataGrid({
@@ -40,17 +41,20 @@ export class ArrowGridViewer extends Panel {
     return this._revealed.promise;
   }
 
+  get path(): string {
+    return this._options.path;
+  }
+
   protected async initialize(): Promise<void> {
-    await this._context.ready;
     await this._updateGrid();
     this._revealed.resolve(undefined);
   }
 
   private async _updateGrid() {
-    this._grid.dataModel = await ArrowModel.fetch("data/gen/test.parquet");
+    this._grid.dataModel = await ArrowModel.fetch(this.path);
   }
 
-  private _context: DocumentRegistry.Context;
+  private _options: ArrowGridViewer.IOptions;
   private _grid: DataGridModule.DataGrid;
   private _revealed = new PromiseDelegate<void>();
   private _ready: Promise<void>;
@@ -66,7 +70,7 @@ export class ArrowGridDocumentWidget extends DocumentWidget<ArrowGridViewer> {
   constructor(options: ArrowGridDocumentWidget.IOptions) {
     let { content, context, reveal, ...other } = options;
     content = content || ArrowGridDocumentWidget._createContent(context);
-    reveal = Promise.all([reveal, content.revealed]);
+    reveal = Promise.all([reveal, content.revealed, context.ready]);
     super({ content, context, reveal, ...other });
     this.addClass("arrow-viewer-base");
   }
@@ -74,7 +78,7 @@ export class ArrowGridDocumentWidget extends DocumentWidget<ArrowGridViewer> {
   private static _createContent(
     context: DocumentRegistry.IContext<DocumentRegistry.IModel>,
   ): ArrowGridViewer {
-    return new ArrowGridViewer({ context });
+    return new ArrowGridViewer({ path: context.path });
   }
 }
 
