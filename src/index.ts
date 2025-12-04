@@ -1,17 +1,59 @@
 import { ILayoutRestorer } from "@jupyterlab/application";
 import { WidgetTracker } from "@jupyterlab/apputils";
+import { IDefaultDrive } from "@jupyterlab/services";
 import { ITranslator } from "@jupyterlab/translation";
 import type { JupyterFrontEnd, JupyterFrontEndPlugin } from "@jupyterlab/application";
 import type { IDocumentWidget } from "@jupyterlab/docregistry";
+import type * as services from "@jupyterlab/services";
+import type { Contents } from "@jupyterlab/services";
 
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer } from "./widget";
+
+export namespace NoOpContentProvider {
+  export interface IOptions {
+    currentDrive: services.Contents.IDrive;
+  }
+}
+
+export class NoOpContentProvider implements services.IContentProvider {
+  constructor(options: NoOpContentProvider.IOptions) {
+    this._currentDrive = options.currentDrive;
+  }
+
+  async get(
+    localPath: string,
+    options?: services.Contents.IFetchOptions,
+  ): Promise<services.Contents.IModel> {
+    // Not calling get() with options.contentProviderId otherwise it's an infinite loop.
+    // Not requesting content since the DataModel will do it.
+    return this._currentDrive.get(localPath, {
+      ...options,
+      contentProviderId: undefined,
+      content: false,
+    });
+  }
+
+  async save(
+    localPath: string,
+    options: Partial<services.Contents.IModel> & services.Contents.IContentProvisionOptions = {},
+  ): Promise<services.Contents.IModel> {
+    return this._currentDrive.save(localPath, {
+      ...options,
+      contentProviderId: undefined,
+    });
+  }
+
+  private _currentDrive: services.Contents.IDrive;
+}
+
+const NOOP_CONTENT_PROVIDER_ID = "noop-provider";
 
 const arrowGrid: JupyterFrontEndPlugin<void> = {
   activate: activateArrowGrid,
   id: "@jupyterdiana/arrowgridviewer-extension:arrowgrid",
   description: "Adds viewer for file that can be read into Arrow format.",
-  requires: [ITranslator],
+  requires: [ITranslator, IDefaultDrive],
   optional: [ILayoutRestorer],
   autoStart: true,
 };
@@ -19,9 +61,21 @@ const arrowGrid: JupyterFrontEndPlugin<void> = {
 function activateArrowGrid(
   app: JupyterFrontEnd,
   translator: ITranslator,
+  defaultDrive: Contents.IDrive,
   restorer: ILayoutRestorer | null,
 ): void {
   const factory_arrow = "ArrowTable";
+
+  const trans = translator.load("jupyterlab");
+
+  // Register the NoOp content provider once
+  const registry = defaultDrive.contentProviderRegistry;
+  if (registry) {
+    const noOpContentProvider = new NoOpContentProvider({
+      currentDrive: defaultDrive,
+    });
+    registry.register(NOOP_CONTENT_PROVIDER_ID, noOpContentProvider);
+  }
 
   app.docRegistry.addFileType({
     name: "parquet",
@@ -32,8 +86,6 @@ function activateArrowGrid(
     fileFormat: "base64",
   });
 
-  const trans = translator.load("jupyterlab");
-
   const factory = new ArrowGridViewerFactory({
     name: factory_arrow,
     label: trans.__("Arrow Dataframe Viewer"),
@@ -41,6 +93,7 @@ function activateArrowGrid(
     defaultFor: ["parquet"],
     readOnly: true,
     translator,
+    contentProviderId: NOOP_CONTENT_PROVIDER_ID,
   });
   const tracker = new WidgetTracker<IDocumentWidget<ArrowGridViewer>>({
     namespace: "arrowviewer",
@@ -66,7 +119,7 @@ function activateArrowGrid(
     });
 
     if (ft) {
-      widget.title.icon = ft.icon!;
+      widget.title.icon = ft.icon;
       widget.title.iconClass = ft.iconClass!;
       widget.title.iconLabel = ft.iconLabel!;
     }
