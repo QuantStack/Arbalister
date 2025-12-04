@@ -3,7 +3,7 @@ import { WidgetTracker } from "@jupyterlab/apputils";
 import { IDefaultDrive } from "@jupyterlab/services";
 import { ITranslator } from "@jupyterlab/translation";
 import type { JupyterFrontEnd, JupyterFrontEndPlugin } from "@jupyterlab/application";
-import type { IDocumentWidget } from "@jupyterlab/docregistry";
+import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as services from "@jupyterlab/services";
 import type { Contents } from "@jupyterlab/services";
 
@@ -58,6 +58,75 @@ const arrowGrid: JupyterFrontEndPlugin<void> = {
   autoStart: true,
 };
 
+function ensureCsvFileType(
+  docRegistry: DocumentRegistry,
+): DocumentRegistry.IFileType {
+  const name = "csv";
+  const ft =  docRegistry.getFileType(name)!;
+  if(ft){
+    return ft;
+  }
+  docRegistry.addFileType({
+    name,
+    displayName: "CSV",
+    mimeTypes: ["text/csv"],
+    extensions: [".csv"],
+    contentType: "file",
+  });
+  return docRegistry.getFileType(name)!;
+}
+
+function addParquetFileType(
+  docRegistry: DocumentRegistry,
+  options: Partial<DocumentRegistry.IFileType> = {},
+): DocumentRegistry.IFileType {
+  const name = "apache-parquet";
+  docRegistry.addFileType({
+    ...options,
+    name,
+    displayName: "Parquet",
+    mimeTypes: ["application/vnd.apache.parquet"],
+    extensions: [".parquet"],
+    contentType: "file",
+    fileFormat: "base64",
+  });
+  return docRegistry.getFileType(name)!;
+}
+
+function addIpcFileType(
+  docRegistry: DocumentRegistry,
+  options: Partial<DocumentRegistry.IFileType> = {},
+): DocumentRegistry.IFileType {
+  const name = "apache-arrow-ipc";
+  docRegistry.addFileType({
+    ...options,
+    name,
+    displayName: "Arrow IPC",
+    mimeTypes: ["application/vnd.apache.arrow.file"],
+    extensions: [".ipc", ".feather", ".arrow"],
+    contentType: "file",
+    fileFormat: "base64",
+  });
+  return docRegistry.getFileType(name)!;
+}
+
+function addOrcFileType(
+  docRegistry: DocumentRegistry,
+  options: Partial<DocumentRegistry.IFileType> = {},
+): DocumentRegistry.IFileType {
+  const name = "apache-orc";
+  docRegistry.addFileType({
+    ...options,
+    name,
+    displayName: "Arrow ORC",
+    mimeTypes: ["application/octet-stream"],
+    extensions: [".orc"],
+    contentType: "file",
+    fileFormat: "base64",
+  });
+  return docRegistry.getFileType(name)!;
+}
+
 function activateArrowGrid(
   app: JupyterFrontEnd,
   translator: ITranslator,
@@ -77,20 +146,16 @@ function activateArrowGrid(
     registry.register(NOOP_CONTENT_PROVIDER_ID, noOpContentProvider);
   }
 
-  app.docRegistry.addFileType({
-    name: "parquet",
-    displayName: "Parquet",
-    mimeTypes: ["application/vnd.apache.parquet"],
-    extensions: [".parquet"],
-    contentType: "file",
-    fileFormat: "base64",
-  });
+  const csv_ft = ensureCsvFileType(app.docRegistry);
+  const prq_ft = addParquetFileType(app.docRegistry, { icon: csv_ft?.icon });
+  const ipc_ft = addIpcFileType(app.docRegistry, { icon: csv_ft?.icon });
+  const orc_ft = addOrcFileType(app.docRegistry, { icon: csv_ft?.icon });
 
   const factory = new ArrowGridViewerFactory({
     name: factory_arrow,
     label: trans.__("Arrow Dataframe Viewer"),
-    fileTypes: ["parquet", "csv"],
-    defaultFor: ["parquet"],
+    fileTypes: [csv_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name],
+    defaultFor: [csv_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name],
     readOnly: true,
     translator,
     contentProviderId: NOOP_CONTENT_PROVIDER_ID,
@@ -108,7 +173,6 @@ function activateArrowGrid(
   }
 
   app.docRegistry.addWidgetFactory(factory);
-  const ft = app.docRegistry.getFileType("parquet");
 
   factory.widgetCreated.connect(async (_sender, widget) => {
     // Track the widget.
@@ -118,10 +182,10 @@ function activateArrowGrid(
       void tracker.save(widget);
     });
 
-    if (ft) {
-      widget.title.icon = ft.icon;
-      widget.title.iconClass = ft.iconClass!;
-      widget.title.iconLabel = ft.iconLabel!;
+    if (csv_ft) {
+      widget.title.icon = csv_ft.icon;
+      widget.title.iconClass = csv_ft.iconClass!;
+      widget.title.iconLabel = csv_ft.iconLabel!;
     }
 
     await widget.content.ready;
