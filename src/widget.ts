@@ -1,6 +1,6 @@
 import { ABCWidgetFactory, DocumentWidget } from "@jupyterlab/docregistry";
 import { PromiseDelegate } from "@lumino/coreutils";
-import { DataGrid } from "@lumino/datagrid";
+import { BasicKeyHandler, BasicMouseHandler, DataGrid } from "@lumino/datagrid";
 import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
@@ -29,6 +29,9 @@ export class ArrowGridViewer extends Panel {
       },
     });
     this._grid.addClass("arrow-grid-viewer");
+    this._grid.headerVisibility = "all";
+    this._grid.keyHandler = new BasicKeyHandler();
+    this._grid.mouseHandler = new BasicMouseHandler();
     this.addWidget(this._grid);
     this._ready = this.initialize();
   }
