@@ -5,7 +5,8 @@ import type * as Arrow from "apache-arrow";
 
 export class ArrowModel extends DataModel {
   static async fetch(path: string): Promise<ArrowModel> {
-    const table = await tableFromIPC(fetch(`/jupyterdiana/ipc/${path}`));
+    // Works with IPC stream and file
+    const table = await tableFromIPC(fetch(`/arrow/stream/${path}`));
     return new ArrowModel(table);
   }
 

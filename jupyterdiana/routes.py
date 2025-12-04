@@ -18,19 +18,18 @@ class IpcRouteHandler(jupyter_server.base.handlers.APIHandler):
         root_dir = pathlib.Path(self.settings["server_root_dir"])
         file = root_dir / path
 
-        # TODO consider stream
-        self.set_header("Content-Type", "application/vnd.apache.arrow.file")
+        self.set_header("Content-Type", "application/vnd.apache.arrow.stream")
 
         read_table = ja.get_table_reader(format=ja.FileFormat.from_filename(file))
         table: pa.Table = read_table(file)
 
         # TODO can we write directly to socket and send chunks
         sink = pa.BufferOutputStream()
-        with pa.ipc.new_file(sink, table.schema) as writer:
+        with pa.ipc.new_stream(sink, table.schema) as writer:
             writer.write_table(table)
 
         buf: pa.Buffer = sink.getvalue()
-        self.write(buf.to_pybytes())
+        self.write(buf.to_pybytes())  # FIXME to_pybytes copies memory
 
         await self.flush()
 
@@ -40,7 +39,7 @@ def setup_route_handlers(web_app: jupyter_server.serverapp.ServerWebApplication)
     host_pattern = ".*$"
     base_url = web_app.settings["base_url"]
 
-    arrow_route_pattern = url_path_join(base_url, "jupyterdiana/ipc/(.*)")
+    arrow_route_pattern = url_path_join(base_url, "arrow/stream/(.*)")
     handlers = [(arrow_route_pattern, IpcRouteHandler)]
 
     web_app.add_handlers(host_pattern, handlers)  # type: ignore[no-untyped-call]

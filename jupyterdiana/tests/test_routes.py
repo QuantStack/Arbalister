@@ -41,11 +41,11 @@ JpFetch = Callable[..., Awaitable[tornado.httpclient.HTTPResponse]]
 
 async def test_fetch(jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_file: pathlib.Path) -> None:
     """Test fetching a file returns the correct data in IPC."""
-    response = await jp_fetch("jupyterdiana/ipc", str(dummy_table_file))
+    response = await jp_fetch("arrow/stream/", str(dummy_table_file))
 
     assert response.code == 200
-    assert response.headers["Content-Type"] == "application/vnd.apache.arrow.file"
+    assert response.headers["Content-Type"] == "application/vnd.apache.arrow.stream"
 
-    payload = pa.ipc.open_file(response.body).read_all()
+    payload = pa.ipc.open_stream(response.body).read_all()
     assert dummy_table.num_rows == payload.num_rows
     assert dummy_table == payload
