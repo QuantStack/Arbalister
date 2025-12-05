@@ -14,7 +14,7 @@ except ImportError:
 
 import jupyterlab.labapp
 
-from . import arrow as abw
+from . import arrow as arrow
 from . import routes as routes
 
 

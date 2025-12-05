@@ -5,6 +5,8 @@ environments:
     - url: https://conda.anaconda.org/conda-forge/
     indexes:
     - https://pypi.org/simple
+    options:
+      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -630,6 +632,8 @@ environments:
     - url: https://conda.anaconda.org/conda-forge/
     indexes:
     - https://pypi.org/simple
+    options:
+      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -1719,7 +1723,7 @@ packages:
 - pypi: ./
   name: arbalister
   version: 0.1.0
-  sha256: ad79ded55f06efe79ebced1940bf2cfd8c61c976e9fff2bd917b50c296fc5012
+  sha256: ebd01d6be5b8dfbfd5e324daecb3c2a75b4478e726d773d3b1239f7dd113a895
   requires_dist:
   - datafusion>=40.0
   - jupyter-server>=2.4.0,<3

@@ -12,4 +12,3 @@ project_short_description: Arrow viewer for Jupyter
 python_name: arbalister
 repository: ''
 test: true
-

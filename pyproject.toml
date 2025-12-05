@@ -179,7 +179,6 @@ pylsp-mypy = ">=0.6.8"
 vscode-langservers-extracted = ">=4.10"
 typescript-language-server = ">=5.1"
 typos-lsp = "*"
-pre-commit = "*"
 
 [tool.pixi.feature.dev.tasks]
 jlpm = "jlpm"
