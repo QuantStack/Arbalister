@@ -54,7 +54,9 @@ export class ArrowGridViewer extends Panel {
   }
 
   private async _updateGrid() {
-    this._grid.dataModel = await ArrowModel.fetch(this.path);
+    const model = new ArrowModel(this.path);
+    await model.ready;
+    this._grid.dataModel = model;
   }
 
   private _options: ArrowGridViewer.IOptions;

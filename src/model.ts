@@ -4,27 +4,35 @@ import { tableFromIPC } from "apache-arrow";
 import type * as Arrow from "apache-arrow";
 
 export class ArrowModel extends DataModel {
-  static async fetch(path: string): Promise<ArrowModel> {
-    // Works with IPC stream and file
-    const table = await tableFromIPC(fetch(`/arrow/stream/${path}`));
-    return new ArrowModel(table);
+  constructor(path: string) {
+    super();
+    this._path = path;
+    this._ready = this.initialize();
   }
 
-  constructor(table: Arrow.Table) {
-    super();
-    this.data_ = table;
+  protected async initialize(): Promise<void> {
+    // Works with IPC stream and file
+    this._table = await tableFromIPC(fetch(`/arrow/stream/${this._path}`));
+  }
+
+  get ready(): Promise<void> {
+    return this._ready;
+  }
+
+  private get table(): Arrow.Table {
+    return this._table!;
   }
 
   columnCount(region: DataModel.ColumnRegion): number {
     if (region === "body") {
-      return this.data_.numCols;
+      return this.table.numCols;
     }
     return 1;
   }
 
   rowCount(region: DataModel.RowRegion): number {
     if (region === "body") {
-      return this.data_.numRows;
+      return this.table.numRows;
     }
     return 1;
   }
@@ -32,9 +40,9 @@ export class ArrowModel extends DataModel {
   data(region: DataModel.CellRegion, row: number, column: number): string {
     switch (region) {
       case "body":
-        return this.data_.getChildAt(column)?.get(row).toString();
+        return this.table.getChildAt(column)?.get(row).toString();
       case "column-header":
-        return this.data_.schema.names[column].toString();
+        return this.table.schema.names[column].toString();
       case "row-header":
         return row.toString();
       case "corner-header":
@@ -44,5 +52,7 @@ export class ArrowModel extends DataModel {
     }
   }
 
-  private data_: Arrow.Table;
+  private _path: string;
+  private _table: Arrow.Table | undefined = undefined;
+  private _ready: Promise<void>;
 }
