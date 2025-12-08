@@ -11,51 +11,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  lint:
+    name: Code checks
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Setup Pixi
+        uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          pixi-version: v0.60.0
+          cache: true
+          manifest-path: pyproject.toml
+      - name: Run checks and formatters through pre-commit
+        run: pixi run pre-commit run --all-files
 
-      - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
-      - name: Install dependencies
-        run: python -m pip install -U "jupyterlab>=4.0.0,<5"
-
-      - name: Lint the extension
-        run: |
-          set -eux
-          jlpm
-          jlpm run lint:check
-
-      - name: Test the extension
-        run: |
-          set -eux
-          jlpm run test
-
+  test-unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Pixi
+        uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          pixi-version: v0.60.0
+          cache: true
+          manifest-path: pyproject.toml
+      - name: Test server extension
+        run: pixi run test-pytest
+      - name: Test client extension
+        run: pixi run test-jest
       - name: Build the extension
-        run: |
-          set -eux
-          python -m pip install .[test]
-
-          pytest -vv -r ap --cov arbalister
-          jupyter server extension list
-          jupyter server extension list 2>&1 | grep -ie "arbalister.*OK"
-
-          jupyter labextension list
-          jupyter labextension list 2>&1 | grep -ie "arbalister.*OK"
-          python -m jupyterlab.browser_check
-
-      - name: Package the extension
-        run: |
-          set -eux
-
-          pip install build
-          python -m build
-          pip uninstall -y "arbalister" jupyterlab
-
+        run: pixi run build
       - name: Upload extension packages
         uses: actions/upload-artifact@v4
         with:
@@ -63,11 +51,15 @@ jobs:
           path: dist/arbalister*
           if-no-files-found: error
 
-  test_isolated:
-    needs: build
+  test-extension:
+    needs: test-unit
+    name: Test packaged extension
     runs-on: ubuntu-latest
-
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Base Setup
+        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       - name: Install Python
         uses: actions/setup-python@v5
         with:
@@ -83,8 +75,7 @@ jobs:
           sudo rm -rf $(which node)
           sudo rm -rf $(which node)
 
-          pip install "jupyterlab>=4.0.0,<5" arbalister*.whl
-
+          pip install "jupyterlab>=4.5.0,<5" arbalister*.whl
 
           jupyter server extension list
           jupyter server extension list 2>&1 | grep -ie "arbalister.*OK"
@@ -93,57 +84,47 @@ jobs:
           jupyter labextension list 2>&1 | grep -ie "arbalister.*OK"
           python -m jupyterlab.browser_check --no-browser-test
 
-  integration-tests:
+  test-integration:
     name: Integration tests
-    needs: build
+    needs: test-unit
     runs-on: ubuntu-latest
-
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/pw-browsers
-
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
       - name: Download extension package
         uses: actions/download-artifact@v4
         with:
           name: extension-artifacts
-
       - name: Install the extension
         run: |
           set -eux
           python -m pip install "jupyterlab>=4.0.0,<5" arbalister*.whl
-
       - name: Install dependencies
         working-directory: ui-tests
         env:
           YARN_ENABLE_IMMUTABLE_INSTALLS: 0
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
         run: jlpm install
-
       - name: Set up browser cache
         uses: actions/cache@v4
         with:
           path: |
             ${{ github.workspace }}/pw-browsers
           key: ${{ runner.os }}-${{ hashFiles('ui-tests/yarn.lock') }}
-
       - name: Install browser
         run: |
           set -eux
           jlpm playwright install-deps
           jlpm playwright install chromium
         working-directory: ui-tests
-
       - name: Execute integration tests
         working-directory: ui-tests
         run: |
           jlpm playwright test
-
       - name: Upload Playwright Test report
         if: always()
         uses: actions/upload-artifact@v4
@@ -153,8 +134,8 @@ jobs:
             ui-tests/test-results
             ui-tests/playwright-report
 
-  check_links:
-    name: Check Links
+  test-links:
+    name: Test links
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
