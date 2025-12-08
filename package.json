@@ -9,7 +9,7 @@
   ],
   "homepage": "",
   "bugs": {
-    "url": "/issues"
+    "url": "https://github.com/QuantStack/Arbalister/issues"
   },
   "license": "BSD-3-Clause",
   "author": {
@@ -26,7 +26,7 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": ".git"
+    "url": "https://github.com/QuantStack/Arbalister"
   },
   "scripts": {
     "build": "jlpm build:lib && jlpm build:labextension:dev",

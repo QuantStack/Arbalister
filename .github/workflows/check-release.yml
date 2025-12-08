@@ -10,7 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check_release:
+  check-release:
+    name: Check Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,9 +21,7 @@ jobs:
       - name: Check Release
         uses: jupyter-server/jupyter_releaser/.github/actions/check-release@v2
         with:
-
           token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload Distributions
         uses: actions/upload-artifact@v4
         with:
