@@ -121,6 +121,7 @@ arbalister = { path = ".", editable = true }
 
 [tool.pixi.feature.test.dependencies]
 coverage = "*"
+avro = ">=1.10"
 pytest = ">=8.3.0"
 pytest-asyncio = "*"
 pytest-cov = "*"
@@ -216,10 +217,11 @@ JUPYTERLAB_PATH = "$PIXI_PROJECT_ROOT/arbalister/labextension"
 cmd = """
 python data/generate.py batch \
     --num-rows 1_000_000 \
+    -o data/gen/test.avro \
     -o data/gen/test.csv \
-    -o data/gen/test.parquet \
-    -o data/gen/test.orc \
     -o data/gen/test.ipc \
+    -o data/gen/test.orc \
+    -o data/gen/test.parquet \
 """
 outputs = ["data/gen/**/*"]
 description = """Generate different data files to use in development in data/gen."""

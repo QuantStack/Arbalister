@@ -3,40 +3,85 @@ import pathlib
 from typing import Any, Callable, Self
 
 import datafusion as dtfn
+import pyarrow as pa
 
 
-class FileFormat(enum.Enum):
+class FileFormat(enum.StrEnum):
     """Known file format that we can read into an Arrow format.
 
     Todo:
-    - Avro
     - ADBC (Sqlite/Postgres)
 
     """
 
+    Avro = "avro"
     Csv = "csv"
-    Parquet = "parquet"
     Ipc = "ipc"
     Orc = "orc"
+    Parquet = "parquet"
 
     @classmethod
     def from_filename(cls, file: pathlib.Path | str) -> Self:
         """Get the file format from a filename extension."""
         file_type = pathlib.Path(file).suffix.removeprefix(".").strip().lower()
+
+        # Match again their default value
+        if ft := next((ft for ft in FileFormat if str(ft) == file_type), None):
+            return ft
+        # Match other known values
         match file_type:
-            case "csv":
-                return cls.Csv
-            case "parquet":
-                return cls.Parquet
-            case "ipc" | "feather" | "arrow":
+            case "ipc" | "feather":
                 return cls.Ipc
-            case "orc":
-                return cls.Orc
-            case _:
-                raise ValueError(f"Unknown file type {file_type}")
+        raise ValueError(f"Unknown file type {file_type}")
 
 
 ReadCallable = Callable[..., dtfn.DataFrame]
+
+
+def _arrow_to_avro_type(field: pa.Field) -> str | dict[str, Any]:
+    t = field.type
+    if pa.types.is_integer(t):
+        return "long" if t.bit_width > 32 else "int"
+    if pa.types.is_floating(t):
+        return "double" if t.bit_width > 32 else "float"
+    if pa.types.is_boolean(t):
+        return "boolean"
+    if pa.types.is_string(t):
+        return "string"
+    if pa.types.is_binary(t) or pa.types.is_large_binary(t):
+        return "bytes"
+    if pa.types.is_timestamp(t):
+        return "long"
+    if pa.types.is_list(t) or pa.types.is_large_list(t):
+        item = _arrow_to_avro_type(pa.field("item", t.value_type))
+        return {"type": "array", "items": item}
+    # fallback
+    return "string"
+
+
+def _write_avro(
+    table: pa.Table, path: str | pathlib.Path, name: str = "Record", namespace: str = "ns"
+) -> None:
+    # Avro writing is an optional dependency not added by default as it is only necessary during testing
+    import json
+
+    import avro.schema
+    from avro.datafile import DataFileWriter
+    from avro.io import DatumWriter
+
+    schema = {
+        "type": "record",
+        "name": name,
+        "namespace": namespace,
+        "fields": [{"name": f.name, "type": _arrow_to_avro_type(f)} for f in table.schema],
+    }
+    schema_parsed = avro.schema.parse(json.dumps(schema))
+    recs = table.to_pylist()
+    with open(path, "wb") as f:
+        writer = DataFileWriter(f, DatumWriter(), schema_parsed)
+        for rec in recs:
+            writer.append(rec)
+        writer.close()
 
 
 def get_table_reader(format: FileFormat) -> ReadCallable:
@@ -47,6 +92,8 @@ def get_table_reader(format: FileFormat) -> ReadCallable:
     #      return ctx.read_table(ds, *args, **kwargs)
     out: ReadCallable
     match format:
+        case FileFormat.Avro:
+            out = dtfn.SessionContext.read_avro
         case FileFormat.Csv:
             out = dtfn.SessionContext.read_csv
         case FileFormat.Parquet:
@@ -83,6 +130,8 @@ def get_table_writer(format: FileFormat) -> WriteCallable:
     """Get the arrow writer factory function for the given format."""
     out: WriteCallable
     match format:
+        case FileFormat.Avro:
+            out = _write_avro
         case FileFormat.Csv:
             import pyarrow.csv
 

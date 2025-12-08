@@ -48,4 +48,4 @@ async def test_fetch(jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_file:
 
     payload = pa.ipc.open_stream(response.body).read_all()
     assert dummy_table.num_rows == payload.num_rows
-    assert dummy_table == payload
+    assert dummy_table.cast(payload.schema) == payload
