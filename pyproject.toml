@@ -233,6 +233,7 @@ pylsp-mypy = ">=0.6.8"
 vscode-langservers-extracted = ">=4.10"
 typescript-language-server = ">=5.1"
 typos-lsp = "*"
+commitlint-rs = "*"
 
 [tool.pixi.feature.dev.tasks.jlpm-install]
 cmd = "jlpm install"
@@ -255,6 +256,7 @@ jlpm = { cmd = "jlpm", description = "Run Jupyter lab package manager." }
 jlpm-build = "jlpm run build"
 jlpm-watch = "jlpm run watch"
 pre-commit = { cmd = "pre-commit", description = "Run pre-commit executable." }
+commitlint = "commitlint --config dev/commitlint.yml"
 jupyter = { cmd = "jupyter", description = "Run jupyter." }
 labextension = "jupyter labextension"
 
