@@ -132,35 +132,79 @@ taplo = ">=0.9.2"
 typos = ">=1.31.2"
 faker = "*"
 
-[tool.pixi.feature.test.tasks]
 # Formatters
-fmt-ruff = "ruff format"
-fmt-biome = "biome format --write"
-fmt-taplo = "taplo format pyproject.toml"
-fmt = [{ task = "fmt-ruff" }, { task = "fmt-biome" }, { task = "fmt-taplo" }]
+
+[tool.pixi.feature.test.tasks.fmt-ruff]
+cmd = "ruff format"
+description = "Format Python files with ruff."
+
+[tool.pixi.feature.test.tasks.fmt-biome]
+cmd = "biome format --write"
+description = "Format JS/TS files with biome."
+
+[tool.pixi.feature.test.tasks.fmt-taplo]
+cmd = "taplo format pyproject.toml"
+description = "Format TOML files with taplo."
+
+[tool.pixi.feature.test.tasks.fmt]
+depends-on = [
+  { task = "fmt-ruff" },
+  { task = "fmt-biome" },
+  { task = "fmt-taplo" },
+]
+description = "Run all code formatters."
+
 # Checkers
-check-ruff = "ruff check --extend-exclude '*/jupyter_server_test_config.py' --fix --unsafe-fixes"
-check-ruff-format = "ruff format --check"
-check-mypy = "python -m mypy arbalister/ data/"
-check-biome = "biome check --write --error-on-warnings"
-check-taplo-format = "taplo check"
-check-typos = "typos --write-changes"
-check = [
-  { task = "check-ruff-format" },
+
+[tool.pixi.feature.test.tasks.check-ruff]
+cmd = "ruff check --extend-exclude '*/jupyter_server_test_config.py' --fix --unsafe-fixes"
+description = "Check Python code with ruff."
+
+[tool.pixi.feature.test.tasks.check-mypy]
+cmd = "python -m mypy arbalister/ data/"
+description = "Check Python typing with MyPy."
+
+[tool.pixi.feature.test.tasks.check-biome]
+cmd = "biome check --write --error-on-warnings"
+description = "Check JS/TS code with biome."
+
+[tool.pixi.feature.test.tasks.check-typos]
+cmd = "typos --write-changes"
+description = "Check for English typos with typos."
+
+[tool.pixi.feature.test.tasks.check]
+depends-on = [
   { task = "check-ruff" },
   { task = "check-mypy" },
   { task = "check-biome" },
-  { task = "check-taplo-format" },
   { task = "check-typos" },
 ]
-# Tests
-test-pytest = "python -m pytest"
-test-jest = "npx --no jest --coverage"
-test = { depends-on = ["test-pytest", "test-jest"] }
-# All
-ci = { depends-on = ["check", "test"] }
+description = "Run all code checks."
 
-[tool.pixi.feature.test.tasks.gen-data]
+# Tests
+
+[tool.pixi.feature.test.tasks.test-pytest]
+cmd = "python -m pytest"
+description = "Test server extension with pytest."
+
+[tool.pixi.feature.test.tasks.test-jest]
+cmd = "npx --no jest --coverage"
+description = "Test client extension with Jest."
+
+[tool.pixi.feature.test.tasks.test]
+depends-on = ["test-pytest", "test-jest"]
+description = "Run all tests."
+
+# All
+
+[tool.pixi.feature.test.tasks.ci]
+depends-on = ["check", "test"]
+description = "Run all formatters, code checks, and tests."
+
+[tool.pixi.feature.dev.activation.env]
+JUPYTERLAB_PATH = "$PIXI_PROJECT_ROOT/arbalister/labextension"
+
+[tool.pixi.feature.dev.tasks.gen-data]
 cmd = """
 python data/generate.py batch \
     --num-rows 1_000_000 \
@@ -170,9 +214,7 @@ python data/generate.py batch \
     -o data/gen/test.ipc \
 """
 outputs = ["data/gen/**/*"]
-
-[tool.pixi.feature.dev.activation.env]
-JUPYTERLAB_PATH = "$PIXI_PROJECT_ROOT/arbalister/labextension"
+description = """Generate different data files to use in development in data/gen."""
 
 [tool.pixi.feature.dev.dependencies]
 jupyterlab = ">=4.4"
@@ -185,9 +227,9 @@ typescript-language-server = ">=5.1"
 typos-lsp = "*"
 
 [tool.pixi.feature.dev.tasks]
-jlpm = "jlpm"
+jlpm = { cmd = "jlpm", description = "Run Jupyter lab package manager." }
 jlpm-build = "jlpm run build"
 jlpm-watch = "jlpm run watch"
-pre-commit = "pre-commit"
+pre-commit = { cmd = "pre-commit", description = "Run pre-commit executable." }
+jupyter = { cmd = "jupyter", description = "Run jupyter." }
 labextension = "jupyter labextension"
-jupyter = "jupyter"

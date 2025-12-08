@@ -52,6 +52,8 @@ We use the [Pixi](https://prefix.dev/) Conda-compatible environment manager for 
 With this single tool, we can get most dependencies, including NodeJS and Python themselves.
 Head to their site for installation instructions.
 
+Run `pixi task list` for details on all available tasks.
+
 Only the javascript packages need to be installed.
 This is managed by the `jlpm` command, JupyterLab's pinned version of [yarn](https://yarnpkg.com/)
 that is installed with JupyterLab in the Pixi file.
@@ -116,6 +118,21 @@ More precisely, the JupyterLab helper
 extension in JupyterLab.
 
 More information are provided within the [ui-tests](./ui-tests/README.md) README.
+
+### Running code formatters and checks
+
+To run all code formatters, use Pixi:
+
+```sh
+pixi run fmt
+```
+
+Similarly for the code checks:
+
+```sh
+pixi run check
+```
+
 
 ### Packaging the extension
 
