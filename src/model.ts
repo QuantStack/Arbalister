@@ -13,7 +13,7 @@ export class ArrowModel extends DataModel {
   protected async initialize(): Promise<void> {
     // Works with IPC stream and file
     this._table = await tableFromIPC(fetch(`/arrow/stream/${this._path}`));
-    console.log('this._table',this._table);
+    console.log("this._table", this._table);
   }
 
   get ready(): Promise<void> {
