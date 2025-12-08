@@ -187,6 +187,8 @@ function activateArrowGrid(
     }
 
     await widget.content.ready;
+
+    console.log("JupyterLab extension arbalister is activated!");
   });
 }
 
