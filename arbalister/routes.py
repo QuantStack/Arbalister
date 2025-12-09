@@ -11,6 +11,7 @@ import tornado
 from jupyter_server.utils import url_path_join
 
 from . import arrow as abw
+from . import params as params
 
 
 class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
@@ -42,6 +43,18 @@ class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
         read_table = abw.get_table_reader(format=abw.FileFormat.from_filename(file))
         return read_table(self.context, file)
 
+    def get_query_params_as[T](self, dataclass_type: type[T]) -> T:
+        """Extract query parameters into a dataclass type."""
+        return params.build_dataclass(dataclass_type, self.get_query_argument)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class IpcParams:
+    """Query parameter for IPC data."""
+
+    per_chunk: int | None = None
+    chunk: int | None = None
+
 
 class IpcRouteHandler(BaseRouteHandler):
     """An handler to get file in IPC."""
@@ -49,14 +62,15 @@ class IpcRouteHandler(BaseRouteHandler):
     @tornado.web.authenticated
     async def get(self, path: str) -> None:
         """HTTP GET return an IPC file."""
+        params = self.get_query_params_as(IpcParams)
+
         self.set_header("Content-Type", "application/vnd.apache.arrow.stream")
 
         df: dtfn.DataFrame = self.dataframe(path)
 
-        if per_chunk := self.get_query_argument("per_chunk", None):
-            count: int = int(per_chunk)
-            offset: int = int(self.get_query_argument("chunk", "0")) * count
-            df = df.limit(count=count, offset=offset)
+        if params.per_chunk and params.chunk:
+            offset: int = params.chunk * params.per_chunk
+            df = df.limit(count=params.per_chunk, offset=offset)
 
         table: pa.Table = df.to_arrow_table()
 
