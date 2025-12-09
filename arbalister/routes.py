@@ -51,7 +51,13 @@ class IpcRouteHandler(BaseRouteHandler):
         """HTTP GET return an IPC file."""
         self.set_header("Content-Type", "application/vnd.apache.arrow.stream")
 
-        df = self.dataframe(path)
+        df: dtfn.DataFrame = self.dataframe(path)
+
+        if per_chunk := self.get_query_argument("per_chunk", None):
+            count: int = int(per_chunk)
+            offset: int = int(self.get_query_argument("chunk", "0")) * count
+            df = df.limit(count=count, offset=offset)
+
         table: pa.Table = df.to_arrow_table()
 
         # TODO can we write directly to socket and send chunks
@@ -116,8 +122,8 @@ def setup_route_handlers(web_app: jupyter_server.serverapp.ServerWebApplication)
     context = dtfn.SessionContext(make_datafusion_config())
 
     handlers = [
-        (url_path_join(base_url, "arrow/stream/(.*)"), IpcRouteHandler, {"context": context}),
-        (url_path_join(base_url, "arrow/stats/(.*)"), StatsRouteHandler, {"context": context}),
+        (url_path_join(base_url, r"arrow/stream/([^?]*)"), IpcRouteHandler, {"context": context}),
+        (url_path_join(base_url, r"arrow/stats/([^?]*)"), StatsRouteHandler, {"context": context}),
     ]
 
     web_app.add_handlers(host_pattern, handlers)  # type: ignore[no-untyped-call]

@@ -52,6 +52,26 @@ async def test_ipc_route(jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_f
     assert dummy_table.cast(payload.schema) == payload
 
 
+async def test_ipc_route_limit(
+    jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_file: pathlib.Path
+) -> None:
+    """Test fetching a file returns the limited data in IPC."""
+    num_rows = 2
+    chunk = 1
+    response = await jp_fetch(
+        "arrow/stream",
+        str(dummy_table_file),
+        params={"per_chunk": num_rows, "chunk": chunk},
+    )
+
+    assert response.code == 200
+    assert response.headers["Content-Type"] == "application/vnd.apache.arrow.stream"
+
+    payload = pa.ipc.open_stream(response.body).read_all()
+    assert payload.num_rows == num_rows
+    assert dummy_table.slice(chunk * num_rows, num_rows).cast(payload.schema) == payload
+
+
 async def test_stats_route(jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_file: pathlib.Path) -> None:
     """Test fetching a file returns the correct metadata in Json."""
     response = await jp_fetch("arrow/stats/", str(dummy_table_file))
