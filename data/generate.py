@@ -1,5 +1,6 @@
 import argparse
 import pathlib
+import random
 
 import faker
 import pyarrow as pa
@@ -56,6 +57,14 @@ def configure_argparse() -> argparse.ArgumentParser:
     return parser
 
 
+def shuffle_table(table: pa.Table, seed: int | None = None) -> pa.Table:
+    """Shuffle the rows and columns of a table."""
+    rnd = random.Random(seed)
+    row_indices = pa.array(rnd.sample(range(table.num_rows), table.num_rows), type=pa.int64())
+    col_order = rnd.sample(table.column_names, len(table.column_names))
+    return table.select(col_order).take(row_indices)
+
+
 def save_table(table: pa.Table, path: pathlib.Path, file_type: aa.FileFormat) -> None:
     """Save a table to file with the given file type."""
     path.parent.mkdir(exist_ok=True, parents=True)
@@ -75,11 +84,11 @@ def main() -> None:
             ft = next((t for t in aa.FileFormat if t.name.lower() == args.output_type), None)
             if ft is None:
                 ft = aa.FileFormat.from_filename(args.output_file)
-            save_table(table, args.output_file, ft)
+            save_table(shuffle_table(table), args.output_file, ft)
         case "batch":
             for p in args.output_file:
                 ft = aa.FileFormat.from_filename(p)
-                save_table(table, p, ft)
+                save_table(shuffle_table(table), p, ft)
 
 
 if __name__ == "__main__":
