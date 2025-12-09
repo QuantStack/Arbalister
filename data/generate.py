@@ -7,15 +7,21 @@ import pyarrow as pa
 
 import arbalister.arrow as aa
 
-MAX_FAKER_ROWS = 10_000
+MAX_FAKER_ROWS = 100_000
+
+
+def widen(field: pa.Field) -> pa.Field:
+    """Adapt Arrow schema for large files."""
+    return pa.field(field.name, pa.large_string()) if pa.types.is_string(field.type) else field
 
 
 def generate_table(num_rows: int) -> pa.Table:
     """Generate a table with fake data."""
     if num_rows > MAX_FAKER_ROWS:
         table = generate_table(MAX_FAKER_ROWS)
+        widened = table.cast(pa.schema([widen(f) for f in table.schema]))
         n_repeat = num_rows // MAX_FAKER_ROWS
-        large_table = pa.concat_tables([table] * n_repeat, promote_options="default")
+        large_table = pa.concat_tables([widened] * n_repeat, promote_options="default")
         return large_table.slice(0, num_rows)
 
     gen = faker.Faker()

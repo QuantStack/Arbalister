@@ -221,8 +221,15 @@ python data/generate.py batch \
     -o data/gen/test.orc \
     -o data/gen/test.parquet \
 """
-outputs = ["data/gen/**/*"]
+outputs = ["data/gen/**/test.*"]
 description = """Generate different data files to use in development in data/gen."""
+
+[tool.pixi.feature.dev.tasks.gen-data-large]
+cmd = """
+python data/generate.py single --num-rows 100_000_000 -o data/gen/large.parquet
+"""
+outputs = ["data/gen/**/large.parquet"]
+description = """Generate a large parquet file."""
 
 [tool.pixi.feature.dev.dependencies]
 jupyterlab = ">=4.4"
