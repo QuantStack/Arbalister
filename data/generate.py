@@ -7,9 +7,17 @@ import pyarrow as pa
 
 import arbalister.arrow as aa
 
+MAX_FAKER_ROWS = 10_000
+
 
 def generate_table(num_rows: int) -> pa.Table:
     """Generate a table with fake data."""
+    if num_rows > MAX_FAKER_ROWS:
+        table = generate_table(MAX_FAKER_ROWS)
+        n_repeat = num_rows // MAX_FAKER_ROWS
+        large_table = pa.concat_tables([table] * n_repeat, promote_options="default")
+        return large_table.slice(0, num_rows)
+
     gen = faker.Faker()
     data = {
         "name": [gen.name() for _ in range(num_rows)],
