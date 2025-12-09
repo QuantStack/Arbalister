@@ -1,0 +1,23 @@
+rules:
+  description-empty:
+    level: error
+  subject-empty:
+    level: ignore
+  scope:
+    level: error
+    optional: true
+    options:
+      - client
+      - server
+  type:
+    level: error
+    options:
+      - chore
+      - ci
+      - doc
+      - feat
+      - fix
+      - release
+      - test
+  type-empty:
+    level: error

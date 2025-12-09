@@ -75,6 +75,23 @@ function ensureCsvFileType(docRegistry: DocumentRegistry): DocumentRegistry.IFil
   return docRegistry.getFileType(name)!;
 }
 
+function addAvroFileType(
+  docRegistry: DocumentRegistry,
+  options: Partial<DocumentRegistry.IFileType> = {},
+): DocumentRegistry.IFileType {
+  const name = "apache-avro";
+  docRegistry.addFileType({
+    ...options,
+    name,
+    displayName: "Avro",
+    mimeTypes: ["application/avro-binary"],
+    extensions: [".avro"],
+    contentType: "file",
+    fileFormat: "base64",
+  });
+  return docRegistry.getFileType(name)!;
+}
+
 function addParquetFileType(
   docRegistry: DocumentRegistry,
   options: Partial<DocumentRegistry.IFileType> = {},
@@ -133,6 +150,8 @@ function activateArrowGrid(
   restorer: ILayoutRestorer | null,
   themeManager: IThemeManager | null,
 ): void {
+  console.log("Launching JupyterLab extension arbalister");
+
   const factory_arrow = "ArrowTable";
 
   const trans = translator.load("jupyterlab");
@@ -148,14 +167,15 @@ function activateArrowGrid(
 
   const csv_ft = ensureCsvFileType(app.docRegistry);
   const prq_ft = addParquetFileType(app.docRegistry, { icon: csv_ft?.icon });
+  const avo_ft = addAvroFileType(app.docRegistry, { icon: csv_ft?.icon });
   const ipc_ft = addIpcFileType(app.docRegistry, { icon: csv_ft?.icon });
   const orc_ft = addOrcFileType(app.docRegistry, { icon: csv_ft?.icon });
 
   const factory = new ArrowGridViewerFactory({
     name: factory_arrow,
     label: trans.__("Arrow Dataframe Viewer"),
-    fileTypes: [csv_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name],
-    defaultFor: [csv_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name],
+    fileTypes: [csv_ft.name, avo_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name],
+    defaultFor: [csv_ft.name, avo_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name],
     readOnly: true,
     translator,
     contentProviderId: NOOP_CONTENT_PROVIDER_ID,

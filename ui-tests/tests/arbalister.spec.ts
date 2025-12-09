@@ -15,5 +15,5 @@ test("should emit an activation console message", async ({ page }) => {
 
   await page.goto();
 
-  expect(logs.filter((s) => s === "JupyterLab extension arbalister is activated!")).toHaveLength(1);
+  expect(logs.filter((s) => s === "Launching JupyterLab extension arbalister")).toHaveLength(1);
 });

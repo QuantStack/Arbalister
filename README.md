@@ -68,10 +68,11 @@ To build the client-side extension, use:
 pixi run jlpm build
 ```
 
-To run the extension, launch JupyterLab through pixi (pass any other command line argument to
-forward them to Jupyter):
+To run the extension in development mode in JupyterLab, run the following with pixi.
+This will launch jupyter after making sure the extension is installed.
+You can pass any other command line argument to forward them to JupyterLab.
 ```sh
-pixi run jupyter lab
+pixi run serve-dev
 ```
 
 You can watch the source directory and run JupyterLab at the same time in different terminals to

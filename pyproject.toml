@@ -121,6 +121,7 @@ arbalister = { path = ".", editable = true }
 
 [tool.pixi.feature.test.dependencies]
 coverage = "*"
+avro = ">=1.10"
 pytest = ">=8.3.0"
 pytest-asyncio = "*"
 pytest-cov = "*"
@@ -142,7 +143,7 @@ description = "Format Python files with ruff."
 
 [tool.pixi.feature.test.tasks.fmt-biome]
 cmd = "biome format --write"
-description = "Format JS/TS files with biome."
+description = "Format JS/TS/CSS files with biome."
 
 [tool.pixi.feature.test.tasks.fmt-yamlfmt]
 args = [{ arg = "path", default = "." }]
@@ -173,8 +174,9 @@ cmd = "python -m mypy arbalister/ data/"
 description = "Check Python typing with MyPy."
 
 [tool.pixi.feature.test.tasks.check-biome]
+# TODO Add stylelint ?
 cmd = "biome check --write --error-on-warnings"
-description = "Check JS/TS code with biome."
+description = "Check JS/TS/CSS code with biome."
 
 [tool.pixi.feature.test.tasks.check-typos]
 cmd = "typos --write-changes"
@@ -209,17 +211,15 @@ description = "Run all tests."
 depends-on = ["check", "test"]
 description = "Run all formatters, code checks, and tests."
 
-[tool.pixi.feature.dev.activation.env]
-JUPYTERLAB_PATH = "$PIXI_PROJECT_ROOT/arbalister/labextension"
-
 [tool.pixi.feature.dev.tasks.gen-data]
 cmd = """
 python data/generate.py batch \
     --num-rows 1_000_000 \
+    -o data/gen/test.avro \
     -o data/gen/test.csv \
-    -o data/gen/test.parquet \
-    -o data/gen/test.orc \
     -o data/gen/test.ipc \
+    -o data/gen/test.orc \
+    -o data/gen/test.parquet \
 """
 outputs = ["data/gen/**/*"]
 description = """Generate different data files to use in development in data/gen."""
@@ -233,12 +233,30 @@ pylsp-mypy = ">=0.6.8"
 vscode-langservers-extracted = ">=4.10"
 typescript-language-server = ">=5.1"
 typos-lsp = "*"
+commitlint-rs = "*"
+
+[tool.pixi.feature.dev.tasks.jlpm-install]
+cmd = "jlpm install"
+description = "Install NPM packages."
+inputs = ["package.json", "yarn.lock"]
+outputs = [".yarn/install-state.gz"]
+
+[tool.pixi.feature.dev.tasks.install-dev]
+depends-on = ["jlpm-install"]
+cmd = "jupyter labextension develop . --overwrite"
+description = "Install extension in developer mode."
+
+[tool.pixi.feature.dev.tasks.serve-dev]
+cmd = "jupyter lab"
+depends-on = ["install-dev"]
+description = "Launch JupyterLab with the current extension installed."
 
 [tool.pixi.feature.dev.tasks]
 jlpm = { cmd = "jlpm", description = "Run Jupyter lab package manager." }
 jlpm-build = "jlpm run build"
 jlpm-watch = "jlpm run watch"
 pre-commit = { cmd = "pre-commit", description = "Run pre-commit executable." }
+commitlint = "commitlint --config dev/commitlint.yml"
 jupyter = { cmd = "jupyter", description = "Run jupyter." }
 labextension = "jupyter labextension"
 

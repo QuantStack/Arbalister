@@ -43,7 +43,7 @@ repos:
         name: "Run Biome format through pixi"
         entry: pixi run fmt-biome""
         language: system
-        types_or: [javascript, jsx, ts, tsx, json]
+        types_or: [javascript, jsx, ts, tsx, json, css]
 
       # Linters
       - id: pixi-biome
