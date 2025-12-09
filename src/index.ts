@@ -1,14 +1,15 @@
 import { ILayoutRestorer } from "@jupyterlab/application";
-import { WidgetTracker } from "@jupyterlab/apputils";
+import { IThemeManager, WidgetTracker } from "@jupyterlab/apputils";
 import { IDefaultDrive } from "@jupyterlab/services";
 import { ITranslator } from "@jupyterlab/translation";
 import type { JupyterFrontEnd, JupyterFrontEndPlugin } from "@jupyterlab/application";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as services from "@jupyterlab/services";
 import type { Contents } from "@jupyterlab/services";
+import type { DataGrid } from "@lumino/datagrid";
 
 import { ArrowGridViewerFactory } from "./widget";
-import type { ArrowGridViewer } from "./widget";
+import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
 
 export namespace NoOpContentProvider {
   export interface IOptions {
@@ -54,7 +55,7 @@ const arrowGrid: JupyterFrontEndPlugin<void> = {
   id: "@arbalister/arrowgridviewer-extension:arrowgrid",
   description: "Adds viewer for file that can be read into Arrow format.",
   requires: [ITranslator, IDefaultDrive],
-  optional: [ILayoutRestorer],
+  optional: [ILayoutRestorer, IThemeManager],
   autoStart: true,
 };
 
@@ -147,6 +148,7 @@ function activateArrowGrid(
   translator: ITranslator,
   defaultDrive: Contents.IDrive,
   restorer: ILayoutRestorer | null,
+  themeManager: IThemeManager | null,
 ): void {
   console.log("Launching JupyterLab extension arbalister");
 
@@ -181,6 +183,8 @@ function activateArrowGrid(
   const tracker = new WidgetTracker<IDocumentWidget<ArrowGridViewer>>({
     namespace: "arrowviewer",
   });
+  let style: DataGrid.Style = Private.LIGHT_STYLE;
+  let rendererConfig: ITextRenderConfig = Private.LIGHT_TEXT_CONFIG;
 
   if (restorer) {
     void restorer.restore(tracker, {
@@ -205,9 +209,76 @@ function activateArrowGrid(
       widget.title.iconClass = csv_ft.iconClass!;
       widget.title.iconLabel = csv_ft.iconLabel!;
     }
-
     await widget.content.ready;
+    widget.content.style = style;
+    widget.content.rendererConfig = rendererConfig;
+    updateThemes();
+
+    console.log("JupyterLab extension arbalister is activated!");
   });
+
+  const updateThemes = (newTheme?: string | null) => {
+    const themeName = newTheme ? (newTheme as string) : themeManager?.theme;
+    const isLight = themeManager?.isLight(themeName as string) ?? true;
+    style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
+    rendererConfig = isLight ? Private.LIGHT_TEXT_CONFIG : Private.DARK_TEXT_CONFIG;
+    tracker.forEach(async (widget) => {
+      await widget.content.ready;
+      widget.content.style = style;
+      widget.content.rendererConfig = rendererConfig;
+    });
+  };
+  if (themeManager) {
+    themeManager.themeChanged.connect((_, args) => {
+      const newTheme = args.newValue;
+      updateThemes(newTheme);
+    });
+  }
+}
+
+/**
+ * A namespace for private data.
+ */
+namespace Private {
+  /**
+   * The light theme for the data grid.
+   */
+  export const LIGHT_STYLE: DataGrid.Style = {
+    voidColor: "#F3F3F3",
+    backgroundColor: "white",
+    headerBackgroundColor: "#EEEEEE",
+    gridLineColor: "rgba(20, 20, 20, 0.15)",
+    headerGridLineColor: "rgba(20, 20, 20, 0.25)",
+    rowBackgroundColor: (i) => (i % 2 === 0 ? "#F5F5F5" : "white"),
+  };
+
+  /**
+   * The dark theme for the data grid.
+   */
+  export const DARK_STYLE: DataGrid.Style = {
+    voidColor: "black",
+    backgroundColor: "#111111",
+    headerBackgroundColor: "#424242",
+    gridLineColor: "rgba(235, 235, 235, 0.15)",
+    headerGridLineColor: "rgba(235, 235, 235, 0.25)",
+    rowBackgroundColor: (i) => (i % 2 === 0 ? "#212121" : "#111111"),
+  };
+
+  /**
+   * The light config for the data grid renderer.
+   */
+  export const LIGHT_TEXT_CONFIG: ITextRenderConfig = {
+    textColor: "#111111",
+    horizontalAlignment: "left",
+  };
+
+  /**
+   * The dark config for the data grid renderer.
+   */
+  export const DARK_TEXT_CONFIG: ITextRenderConfig = {
+    textColor: "#F5F5F5",
+    horizontalAlignment: "left",
+  };
 }
 
 export default arrowGrid;
