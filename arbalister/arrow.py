@@ -110,6 +110,8 @@ def get_table_reader(format: FileFormat) -> ReadCallable:
 
             out = read_ipc
         case FileFormat.Orc:
+            # Watch for https://github.com/datafusion-contrib/datafusion-orc
+            # Evolution for native datafusion reader
             import pyarrow.orc
 
             def read_orc(

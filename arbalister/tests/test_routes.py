@@ -1,3 +1,4 @@
+import json
 import pathlib
 from typing import Awaitable, Callable
 
@@ -39,7 +40,7 @@ def dummy_table_file(
 JpFetch = Callable[..., Awaitable[tornado.httpclient.HTTPResponse]]
 
 
-async def test_fetch(jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_file: pathlib.Path) -> None:
+async def test_ipc_route(jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_file: pathlib.Path) -> None:
     """Test fetching a file returns the correct data in IPC."""
     response = await jp_fetch("arrow/stream/", str(dummy_table_file))
 
@@ -49,3 +50,15 @@ async def test_fetch(jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_file:
     payload = pa.ipc.open_stream(response.body).read_all()
     assert dummy_table.num_rows == payload.num_rows
     assert dummy_table.cast(payload.schema) == payload
+
+
+async def test_stats_route(jp_fetch: JpFetch, dummy_table: pa.Table, dummy_table_file: pathlib.Path) -> None:
+    """Test fetching a file returns the correct metadata in Json."""
+    response = await jp_fetch("arrow/stats/", str(dummy_table_file))
+
+    assert response.code == 200
+    assert response.headers["Content-Type"] == "application/json; charset=UTF-8"
+
+    payload = json.loads(response.body)
+    assert payload["num_cols"] == len(dummy_table.schema)
+    assert payload["num_rows"] == dummy_table.num_rows
