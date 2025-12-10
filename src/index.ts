@@ -30,8 +30,12 @@ export class NoOpContentProvider implements services.IContentProvider {
     // Not requesting content since the DataModel will do it.
     return this._currentDrive.get(localPath, {
       ...options,
+      format: "base64",
       contentProviderId: undefined,
       content: false,
+      // The hash is too time consuming on large files.
+      // Does this prevent Jupyter from detecting file changes?
+      hash: false,
     });
   }
 
