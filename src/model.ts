@@ -85,7 +85,7 @@ export class ArrowModel extends DataModel {
 
     // Fetch data, however we cannot await it due to the interface required by the DataGrid.
     // Instead, we fire the request, and notify of change upon completion.
-    this.fetchChunk(chunk_idx).then((table) => {
+    this._chunks[chunk_idx] = this.fetchChunk(chunk_idx).then((table) => {
       this._chunks[chunk_idx] = table;
       this.emitChanged({
         type: "cells-changed",
@@ -107,6 +107,6 @@ export class ArrowModel extends DataModel {
   private _numRows: number = 0;
   private _numCols: number = 0;
   private _path: string;
-  private _chunks: { [key: number]: Arrow.Table | Promise<Arrow.Table> } = {};
+  private _chunks: { [key: number]: Arrow.Table | Promise<void> } = {};
   private _ready: Promise<void>;
 }
