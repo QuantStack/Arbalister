@@ -7,7 +7,7 @@
     "jupyterlab",
     "jupyterlab-extension"
   ],
-  "homepage": "",
+  "homepage": "https://github.com/QuantStack/Arbalister",
   "bugs": {
     "url": "https://github.com/QuantStack/Arbalister/issues"
   },
