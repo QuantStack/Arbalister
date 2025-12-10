@@ -68,7 +68,7 @@ class IpcRouteHandler(BaseRouteHandler):
 
         df: dtfn.DataFrame = self.dataframe(path)
 
-        if params.per_chunk and params.chunk:
+        if params.per_chunk is not None and params.chunk is not None:
             offset: int = params.chunk * params.per_chunk
             df = df.limit(count=params.per_chunk, offset=offset)
 
