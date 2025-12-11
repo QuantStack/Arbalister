@@ -11,6 +11,11 @@ import type { DataGrid } from "@lumino/datagrid";
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
 
+import {parquetIcon} from "./lab_icons/parquet";
+import {avroIcon} from "./lab_icons/avro";
+import {orcIcon} from "./lab_icons/orc";
+import {arrowIPC} from "./lab_icons/arrowipc";
+
 export namespace NoOpContentProvider {
   export interface IOptions {
     currentDrive: services.Contents.IDrive;
@@ -170,10 +175,10 @@ function activateArrowGrid(
   }
 
   const csv_ft = ensureCsvFileType(app.docRegistry);
-  const prq_ft = addParquetFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const avo_ft = addAvroFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const ipc_ft = addIpcFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const orc_ft = addOrcFileType(app.docRegistry, { icon: csv_ft?.icon });
+  const prq_ft = addParquetFileType(app.docRegistry, { icon: parquetIcon });
+  const avo_ft = addAvroFileType(app.docRegistry, { icon: avroIcon });
+  const ipc_ft = addIpcFileType(app.docRegistry, { icon: arrowIPC });
+  const orc_ft = addOrcFileType(app.docRegistry, { icon: orcIcon });
 
   const factory = new ArrowGridViewerFactory({
     name: factory_arrow,
