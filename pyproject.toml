@@ -226,7 +226,10 @@ description = """Generate different data files to use in development in data/gen
 
 [tool.pixi.feature.dev.tasks.gen-data-large]
 cmd = """
-python data/generate.py single --num-rows 100_000_000 -o data/gen/large.parquet
+python data/generate.py coordinate \
+  --output-file data/gen/large.parquet \
+  --num-rows 100_000_000 \
+  --num-cols 100 \
 """
 outputs = ["data/gen/**/large.parquet"]
 description = """Generate a large parquet file."""

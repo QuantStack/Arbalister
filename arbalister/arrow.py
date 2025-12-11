@@ -2,7 +2,7 @@ import enum
 import pathlib
 from typing import Any, Callable, Self
 
-import datafusion as dtfn
+import datafusion as dn
 import pyarrow as pa
 
 
@@ -35,7 +35,7 @@ class FileFormat(enum.StrEnum):
         raise ValueError(f"Unknown file type {file_type}")
 
 
-ReadCallable = Callable[..., dtfn.DataFrame]
+ReadCallable = Callable[..., dn.DataFrame]
 
 
 def _arrow_to_avro_type(field: pa.Field) -> str | dict[str, Any]:
@@ -93,17 +93,17 @@ def get_table_reader(format: FileFormat) -> ReadCallable:
     out: ReadCallable
     match format:
         case FileFormat.Avro:
-            out = dtfn.SessionContext.read_avro
+            out = dn.SessionContext.read_avro
         case FileFormat.Csv:
-            out = dtfn.SessionContext.read_csv
+            out = dn.SessionContext.read_csv
         case FileFormat.Parquet:
-            out = dtfn.SessionContext.read_parquet
+            out = dn.SessionContext.read_parquet
         case FileFormat.Ipc:
             import pyarrow.feather
 
             def read_ipc(
-                ctx: dtfn.SessionContext, path: str | pathlib.Path, **kwargs: dict[str, Any]
-            ) -> dtfn.DataFrame:
+                ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[str, Any]
+            ) -> dn.DataFrame:
                 #  table = pyarrow.feather.read_table(path, {**{"memory_map": True}, **kwargs})
                 table = pyarrow.feather.read_table(path, **kwargs)
                 return ctx.from_arrow(table)
@@ -115,8 +115,8 @@ def get_table_reader(format: FileFormat) -> ReadCallable:
             import pyarrow.orc
 
             def read_orc(
-                ctx: dtfn.SessionContext, path: str | pathlib.Path, **kwargs: dict[str, Any]
-            ) -> dtfn.DataFrame:
+                ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[str, Any]
+            ) -> dn.DataFrame:
                 table = pyarrow.orc.read_table(path, **kwargs)
                 return ctx.from_arrow(table)
 

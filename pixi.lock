@@ -2570,7 +2570,7 @@ packages:
 - pypi: ./
   name: arbalister
   version: 0.1.0
-  sha256: 23c95ea4c9395af00dc733cedef7aed5a0023a18c5daa5a0f29d3eb0d4f3091b
+  sha256: b3c23e0901a5247469d7f00a61e13669ae82d954e1ae19f5074a2678a84efb23
   requires_dist:
   - datafusion>=40.0
   - jupyter-server>=2.4.0,<3

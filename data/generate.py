@@ -2,26 +2,32 @@ import argparse
 import pathlib
 import random
 
+import datafusion as dn
+import datafusion.functions as dnf
 import faker
 import pyarrow as pa
+import pyarrow.parquet as paq
 
 import arbalister.arrow as aa
 
 MAX_FAKER_ROWS = 100_000
 
 
-def widen(field: pa.Field) -> pa.Field:
-    """Adapt Arrow schema for large files."""
+def _widen_field(field: pa.Field) -> pa.Field:
     return pa.field(field.name, pa.large_string()) if pa.types.is_string(field.type) else field
+
+
+def widen(table: pa.Table) -> pa.Table:
+    """Adapt Arrow schema for large files."""
+    return table.cast(pa.schema([_widen_field(f) for f in table.schema]))
 
 
 def generate_table(num_rows: int) -> pa.Table:
     """Generate a table with fake data."""
     if num_rows > MAX_FAKER_ROWS:
-        table = generate_table(MAX_FAKER_ROWS)
-        widened = table.cast(pa.schema([widen(f) for f in table.schema]))
+        table = widen(generate_table(MAX_FAKER_ROWS))
         n_repeat = num_rows // MAX_FAKER_ROWS
-        large_table = pa.concat_tables([widened] * n_repeat, promote_options="default")
+        large_table = pa.concat_tables([table] * n_repeat, promote_options="default")
         return large_table.slice(0, num_rows)
 
     gen = faker.Faker()
@@ -32,6 +38,57 @@ def generate_table(num_rows: int) -> pa.Table:
         "id": [gen.uuid4() for _ in range(num_rows)],
     }
     return pa.table(data)
+
+
+def _generate_coordinate_table_slice(
+    row_start: int, row_end: int, num_cols: int, ctx: dn.SessionContext
+) -> pa.Table:
+    row_idx: pa.Array = pa.array(range(row_start, row_end), type=pa.int64())
+    table = pa.table({"row": row_idx})
+    table = (
+        ctx.from_arrow(table)
+        .with_columns(
+            *[
+                dnf.concat(
+                    dn.lit("("),  # type: ignore[no-untyped-call]
+                    dnf.col("row"),
+                    dn.lit(f", {j})"),  # type: ignore[no-untyped-call]
+                ).alias(f"col_{j}")
+                for j in range(num_cols)
+            ]
+        )
+        .drop("row")
+        .to_arrow_table()
+    )
+    return widen(table)
+
+
+def _sink_coordinate_table(
+    num_rows: int,
+    num_cols: int,
+    writer: paq.ParquetWriter,
+    ctx: dn.SessionContext,
+    chunk_size: int = 100_000,
+) -> None:
+    for row_start in range(0, num_rows, chunk_size):
+        print(f"Generating {row_start}", flush=True)
+        row_end = min(row_start + chunk_size, num_rows)
+        table = _generate_coordinate_table_slice(row_start, row_end, num_cols=num_cols, ctx=ctx)
+        writer.write(table)
+
+
+def sink_coordinate_table(
+    num_rows: int, num_cols: int, path: pathlib.Path, chunk_size: int = 1_000_000
+) -> None:
+    """Write iteratively a table where each cell has its coordinates."""
+    assert aa.FileFormat.from_filename(path) == aa.FileFormat.Parquet
+    print("Initializing session context", flush=True)
+    ctx = dn.SessionContext()
+    print("Generating schema", flush=True)
+    schema = _generate_coordinate_table_slice(0, 1, num_cols=num_cols, ctx=ctx).schema
+    writer = paq.ParquetWriter(path, schema)
+    _sink_coordinate_table(num_rows=num_rows, num_cols=num_cols, writer=writer, ctx=ctx)
+    writer.close()
 
 
 def configure_command_single(cmd: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -57,6 +114,16 @@ def configure_command_batch(cmd: argparse.ArgumentParser) -> argparse.ArgumentPa
     return cmd
 
 
+def configure_command_coordinate(cmd: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """Configure coordinate subcommand CLI options."""
+    cmd.add_argument(
+        "--output-file", "-o", type=pathlib.Path, required=True, help="Output file path, must be parquet."
+    )
+    cmd.add_argument("--num-rows", type=int, default=1_000_000, help="Number of rows to generate")
+    cmd.add_argument("--num-cols", type=int, default=1000, help="Number of rows to generate")
+    return cmd
+
+
 def configure_argparse() -> argparse.ArgumentParser:
     """Configure CLI options."""
     parser = argparse.ArgumentParser(description="Generate a table and write to file.")
@@ -67,6 +134,9 @@ def configure_argparse() -> argparse.ArgumentParser:
 
     cmd_batch = subparsers.add_parser("batch", help="Generate a multiple tables with the same data.")
     configure_command_batch(cmd_batch)
+
+    cmd_batch = subparsers.add_parser("coordinate", help="Generate a coordinate table file.")
+    configure_command_coordinate(cmd_batch)
 
     return parser
 
@@ -103,6 +173,8 @@ def main() -> None:
             for p in args.output_file:
                 ft = aa.FileFormat.from_filename(p)
                 save_table(shuffle_table(table), p, ft)
+        case "coordinate":
+            sink_coordinate_table(num_rows=args.num_rows, num_cols=args.num_cols, path=args.output_file)
 
 
 if __name__ == "__main__":
