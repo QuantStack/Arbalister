@@ -52,8 +52,8 @@ class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
 class IpcParams:
     """Query parameter for IPC data."""
 
-    per_chunk: int | None = None
-    chunk: int | None = None
+    row_chunk_size: int | None = None
+    row_chunk: int | None = None
 
 
 class IpcRouteHandler(BaseRouteHandler):
@@ -68,9 +68,9 @@ class IpcRouteHandler(BaseRouteHandler):
 
         df: dtfn.DataFrame = self.dataframe(path)
 
-        if params.per_chunk is not None and params.chunk is not None:
-            offset: int = params.chunk * params.per_chunk
-            df = df.limit(count=params.per_chunk, offset=offset)
+        if params.row_chunk_size is not None and params.row_chunk is not None:
+            offset: int = params.row_chunk * params.row_chunk_size
+            df = df.limit(count=params.row_chunk_size, offset=offset)
 
         table: pa.Table = df.to_arrow_table()
 

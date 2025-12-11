@@ -25,10 +25,10 @@ export interface TableParams {
 export async function fetchTable(params: TableParams): Promise<Arrow.Table> {
   const query: string[] = [];
   if (params.per_chunk !== undefined) {
-    query.push(`per_chunk=${encodeURIComponent(params.per_chunk)}`);
+    query.push(`row_chunk_size=${encodeURIComponent(params.per_chunk)}`);
   }
   if (params.chunk !== undefined) {
-    query.push(`chunk=${encodeURIComponent(params.chunk)}`);
+    query.push(`row_chunk=${encodeURIComponent(params.chunk)}`);
   }
   const queryString = query.length ? `?${query.join("&")}` : "";
   const url = `/arrow/stream/${params.path}${queryString}`;
