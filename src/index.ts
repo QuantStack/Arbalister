@@ -12,7 +12,6 @@ import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
 import { arrowIPC, avroIcon, orcIcon, parquetIcon } from "./labicons";
 
-
 export namespace NoOpContentProvider {
   export interface IOptions {
     currentDrive: services.Contents.IDrive;
