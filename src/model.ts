@@ -5,14 +5,24 @@ import type * as Arrow from "apache-arrow";
 import { PairMap } from "./collection";
 import { fetchStats, fetchTable } from "./requests";
 
-const CHUNK_ROW_COUNT = 1024;
-const CHUNK_COL_COUNT = 128;
-const LOADING_REPR = "";
+export namespace ArrowModel {
+  export interface IOptions {
+    path: string;
+    rowChunkSize?: number;
+    colChunkSize?: number;
+    loadingRepr?: string;
+  }
+}
 
 export class ArrowModel extends DataModel {
-  constructor(path: string) {
+  constructor(options: ArrowModel.IOptions) {
     super();
-    this._path = path;
+
+    this._path = options.path;
+    this._rowChunkSize = options.rowChunkSize ?? 512;
+    this._colChunkSize = options.colChunkSize ?? 24;
+    this._loadingRepr = options.loadingRepr ?? "";
+
     this._ready = this.initialize();
   }
 
@@ -72,19 +82,19 @@ export class ArrowModel extends DataModel {
   }
 
   private dataBody(row: number, col: number): string {
-    const row_chunk: number = Math.floor(row / CHUNK_ROW_COUNT);
-    const col_chunk: number = Math.floor(col / CHUNK_COL_COUNT);
+    const row_chunk: number = Math.floor(row / this._rowChunkSize);
+    const col_chunk: number = Math.floor(col / this._colChunkSize);
     const chunk_idx: [number, number] = [row_chunk, col_chunk];
 
     if (this._chunks.has(chunk_idx)) {
       const chunk = this._chunks.get(chunk_idx)!;
       if (chunk instanceof Promise) {
         // Wait for Promise to complete and mark data as modified
-        return LOADING_REPR;
+        return this._loadingRepr;
       }
       // We have data
-      const row_idx_in_chunk = row % CHUNK_ROW_COUNT;
-      const col_idx_in_chunk = col % CHUNK_COL_COUNT;
+      const row_idx_in_chunk = row % this._rowChunkSize;
+      const col_idx_in_chunk = col % this._colChunkSize;
       return chunk.getChildAt(col_idx_in_chunk)?.get(row_idx_in_chunk).toString();
     }
 
@@ -95,31 +105,35 @@ export class ArrowModel extends DataModel {
       this.emitChanged({
         type: "cells-changed",
         region: "body",
-        row: row_chunk * CHUNK_ROW_COUNT,
-        rowSpan: CHUNK_ROW_COUNT,
-        column: col_chunk * CHUNK_COL_COUNT,
-        columnSpan: CHUNK_COL_COUNT,
+        row: row_chunk * this._rowChunkSize,
+        rowSpan: this._rowChunkSize,
+        column: col_chunk * this._colChunkSize,
+        columnSpan: this._colChunkSize,
       });
     });
     this._chunks.set([row_chunk, col_chunk], promise);
 
-    return LOADING_REPR;
+    return this._loadingRepr;
   }
 
   private async fetchChunk(chunk_idx: [number, number]) {
     const [row_chunk, col_chunk] = chunk_idx;
     return await fetchTable({
       path: this._path,
-      row_chunk_size: CHUNK_ROW_COUNT,
+      row_chunk_size: this._rowChunkSize,
       row_chunk: row_chunk,
-      col_chunk_size: CHUNK_COL_COUNT,
+      col_chunk_size: this._colChunkSize,
       col_chunk: col_chunk,
     });
   }
 
+  private _path: string;
+  private _rowChunkSize: number;
+  private _colChunkSize: number;
+  private _loadingRepr: string;
+
   private _numRows: number = 0;
   private _numCols: number = 0;
-  private _path: string;
   private _chunks: PairMap<number, number, Arrow.Table | Promise<void>> = new PairMap();
   private _ready: Promise<void>;
 }

@@ -73,7 +73,7 @@ export class ArrowGridViewer extends Panel {
   }
 
   private async _updateGrid() {
-    const model = new ArrowModel(this.path);
+    const model = new ArrowModel({ path: this.path });
     await model.ready;
     this._grid.dataModel = model;
   }
