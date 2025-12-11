@@ -18,17 +18,25 @@ export async function fetchStats(params: StatsParams): Promise<StatsResponse> {
 
 export interface TableParams {
   readonly path: string;
-  readonly per_chunk?: number;
-  readonly chunk?: number;
+  readonly row_chunk_size?: number;
+  readonly row_chunk?: number;
+  readonly col_chunk_size?: number;
+  readonly col_chunk?: number;
 }
 
 export async function fetchTable(params: TableParams): Promise<Arrow.Table> {
   const query: string[] = [];
-  if (params.per_chunk !== undefined) {
-    query.push(`row_chunk_size=${encodeURIComponent(params.per_chunk)}`);
+  if (params.row_chunk_size !== undefined) {
+    query.push(`row_chunk_size=${encodeURIComponent(params.row_chunk_size)}`);
   }
-  if (params.chunk !== undefined) {
-    query.push(`row_chunk=${encodeURIComponent(params.chunk)}`);
+  if (params.row_chunk !== undefined) {
+    query.push(`row_chunk=${encodeURIComponent(params.row_chunk)}`);
+  }
+  if (params.col_chunk_size !== undefined) {
+    query.push(`col_chunk_size=${encodeURIComponent(params.col_chunk_size)}`);
+  }
+  if (params.col_chunk !== undefined) {
+    query.push(`col_chunk=${encodeURIComponent(params.col_chunk)}`);
   }
   const queryString = query.length ? `?${query.join("&")}` : "";
   const url = `/arrow/stream/${params.path}${queryString}`;

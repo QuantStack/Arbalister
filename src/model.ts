@@ -2,9 +2,11 @@ import { DataModel } from "@lumino/datagrid";
 
 import type * as Arrow from "apache-arrow";
 
+import { PairMap } from "./collection";
 import { fetchStats, fetchTable } from "./requests";
 
 const CHUNK_ROW_COUNT = 1024;
+const CHUNK_COL_COUNT = 128;
 const LOADING_REPR = "";
 
 export class ArrowModel extends DataModel {
@@ -17,10 +19,10 @@ export class ArrowModel extends DataModel {
   protected async initialize(): Promise<void> {
     const [stats, chunk0] = await Promise.all([
       fetchStats({ path: this._path }),
-      this.fetchChunk(0),
+      this.fetchChunk([0, 0]),
     ]);
 
-    this._chunks[0] = chunk0;
+    this._chunks.set([0, 0], chunk0);
     this._numCols = stats.num_cols;
     this._numRows = stats.num_rows;
   }
@@ -30,10 +32,10 @@ export class ArrowModel extends DataModel {
   }
 
   private get schema(): Arrow.Schema {
-    if (!this._chunks[0]) {
+    if (!this._chunks.has([0, 0])) {
       throw new Error("First chunk is null or undefined");
     }
-    const chunk = this._chunks[0];
+    const chunk = this._chunks.get([0, 0])!;
     if (chunk instanceof Promise) {
       throw new Error("schema is not an Arrow.Table");
     }
@@ -69,44 +71,55 @@ export class ArrowModel extends DataModel {
     }
   }
 
-  private dataBody(row: number, column: number): string {
-    const chunk_idx: number = Math.floor(row / CHUNK_ROW_COUNT);
+  private dataBody(row: number, col: number): string {
+    const row_chunk: number = Math.floor(row / CHUNK_ROW_COUNT);
+    const col_chunk: number = Math.floor(col / CHUNK_COL_COUNT);
+    const chunk_idx: [number, number] = [row_chunk, col_chunk];
 
-    if (chunk_idx in this._chunks) {
-      const chunk = this._chunks[chunk_idx];
+    if (this._chunks.has(chunk_idx)) {
+      const chunk = this._chunks.get(chunk_idx)!;
       if (chunk instanceof Promise) {
         // Wait for Promise to complete and mark data as modified
         return LOADING_REPR;
       }
       // We have data
-      const chunk_row_idx = row % CHUNK_ROW_COUNT;
-      return chunk.getChildAt(column)?.get(chunk_row_idx).toString();
+      const row_idx_in_chunk = row % CHUNK_ROW_COUNT;
+      const col_idx_in_chunk = col % CHUNK_COL_COUNT;
+      return chunk.getChildAt(col_idx_in_chunk)?.get(row_idx_in_chunk).toString();
     }
 
     // Fetch data, however we cannot await it due to the interface required by the DataGrid.
     // Instead, we fire the request, and notify of change upon completion.
-    this._chunks[chunk_idx] = this.fetchChunk(chunk_idx).then((table) => {
-      this._chunks[chunk_idx] = table;
+    const promise = this.fetchChunk(chunk_idx).then((table) => {
+      this._chunks.set(chunk_idx, table);
       this.emitChanged({
         type: "cells-changed",
         region: "body",
-        row: chunk_idx * CHUNK_ROW_COUNT,
+        row: row_chunk * CHUNK_ROW_COUNT,
         rowSpan: CHUNK_ROW_COUNT,
-        column: 0,
-        columnSpan: this._numCols,
+        column: col_chunk * CHUNK_COL_COUNT,
+        columnSpan: CHUNK_COL_COUNT,
       });
     });
+    this._chunks.set([row_chunk, col_chunk], promise);
 
     return LOADING_REPR;
   }
 
-  private async fetchChunk(chunk_idx: number) {
-    return await fetchTable({ path: this._path, per_chunk: CHUNK_ROW_COUNT, chunk: chunk_idx });
+  private async fetchChunk(chunk_idx: [number, number]) {
+    const [row_chunk, col_chunk] = chunk_idx;
+    return await fetchTable({
+      path: this._path,
+      row_chunk_size: CHUNK_ROW_COUNT,
+      row_chunk: row_chunk,
+      col_chunk_size: CHUNK_COL_COUNT,
+      col_chunk: col_chunk,
+    });
   }
 
   private _numRows: number = 0;
   private _numCols: number = 0;
   private _path: string;
-  private _chunks: { [key: number]: Arrow.Table | Promise<void> } = {};
+  private _chunks: PairMap<number, number, Arrow.Table | Promise<void>> = new PairMap();
   private _ready: Promise<void>;
 }
