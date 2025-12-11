@@ -27,12 +27,14 @@ export class ArrowModel extends DataModel {
   }
 
   protected async initialize(): Promise<void> {
-    const [stats, chunk0] = await Promise.all([
+    const [schema, stats, chunk00] = await Promise.all([
+      this.fetchSchema(),
       fetchStats({ path: this._path }),
       this.fetchChunk([0, 0]),
     ]);
 
-    this._chunks.set([0, 0], chunk0);
+    this._schema = schema;
+    this._chunks.set([0, 0], chunk00);
     this._numCols = stats.num_cols;
     this._numRows = stats.num_rows;
   }
@@ -42,14 +44,7 @@ export class ArrowModel extends DataModel {
   }
 
   private get schema(): Arrow.Schema {
-    if (!this._chunks.has([0, 0])) {
-      throw new Error("First chunk is null or undefined");
-    }
-    const chunk = this._chunks.get([0, 0])!;
-    if (chunk instanceof Promise) {
-      throw new Error("schema is not an Arrow.Table");
-    }
-    return chunk.schema;
+    return this._schema;
   }
 
   columnCount(region: DataModel.ColumnRegion): number {
@@ -127,6 +122,15 @@ export class ArrowModel extends DataModel {
     });
   }
 
+  private async fetchSchema() {
+    const table = await fetchTable({
+      path: this._path,
+      row_chunk_size: 0,
+      row_chunk: 0,
+    });
+    return table.schema;
+  }
+
   private _path: string;
   private _rowChunkSize: number;
   private _colChunkSize: number;
@@ -134,6 +138,7 @@ export class ArrowModel extends DataModel {
 
   private _numRows: number = 0;
   private _numCols: number = 0;
+  private _schema!: Arrow.Schema;
   private _chunks: PairMap<number, number, Arrow.Table | Promise<void>> = new PairMap();
   private _ready: Promise<void>;
 }
