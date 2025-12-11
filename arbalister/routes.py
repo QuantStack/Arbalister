@@ -54,6 +54,8 @@ class IpcParams:
 
     row_chunk_size: int | None = None
     row_chunk: int | None = None
+    col_chunk_size: int | None = None
+    col_chunk: int | None = None
 
 
 class IpcRouteHandler(BaseRouteHandler):
@@ -71,6 +73,12 @@ class IpcRouteHandler(BaseRouteHandler):
         if params.row_chunk_size is not None and params.row_chunk is not None:
             offset: int = params.row_chunk * params.row_chunk_size
             df = df.limit(count=params.row_chunk_size, offset=offset)
+
+        if params.col_chunk_size is not None and params.col_chunk is not None:
+            col_names = df.schema().names
+            start: int = params.col_chunk * params.col_chunk_size
+            end: int = start + params.col_chunk_size
+            df = df.select(*col_names[start:end])
 
         table: pa.Table = df.to_arrow_table()
 
