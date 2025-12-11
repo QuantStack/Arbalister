@@ -78,6 +78,11 @@ JpFetch = Callable[..., Awaitable[tornado.httpclient.HTTPResponse]]
             col_chunk=1,
             col_chunk_size=2,
         ),
+        # Schema only
+        arb.routes.IpcParams(
+            row_chunk=0,
+            row_chunk_size=0,
+        ),
     ],
 )
 async def test_ipc_route_limit_row(
