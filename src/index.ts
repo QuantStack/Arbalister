@@ -8,9 +8,9 @@ import type * as services from "@jupyterlab/services";
 import type { Contents } from "@jupyterlab/services";
 import type { DataGrid } from "@lumino/datagrid";
 
+import { getIcon } from "./labicons";
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
-import { getIcon } from "./labicons";
 
 export namespace NoOpContentProvider {
   export interface IOptions {

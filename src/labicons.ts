@@ -1,4 +1,5 @@
 import { LabIcon } from "@jupyterlab/ui-components";
+
 import arrowIPCSvg from "../style/icons/arrow.svg";
 import arrowIPCDarkSvg from "../style/icons/arrow_dark.svg";
 import avroSvg from "../style/icons/avro.svg";
@@ -15,7 +16,7 @@ export const getLabIcon = (labIconName: string, iconSvg: string) => {
 };
 
 export const getIcon = (iconName: string, isLight: boolean) => {
-  let icon: LabIcon | undefined = undefined;
+  let icon: LabIcon | undefined;
   switch (iconName) {
     case "parquet":
       icon = getLabIcon(iconName, isLight ? parquetSvgLight : parquetSvgDark);
