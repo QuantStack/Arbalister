@@ -1,6 +1,9 @@
 rules:
   description-empty:
     level: error
+  description-format:
+    level: error
+    format: ^[A-Z].*$
   subject-empty:
     level: ignore
   scope:
