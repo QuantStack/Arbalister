@@ -77,9 +77,7 @@ export class ArrowModel extends DataModel {
   }
 
   private dataBody(row: number, col: number): string {
-    const row_chunk: number = Math.floor(row / this._rowChunkSize);
-    const col_chunk: number = Math.floor(col / this._colChunkSize);
-    const chunk_idx: [number, number] = [row_chunk, col_chunk];
+    const chunk_idx = this.chunkIdx(row, col);
 
     if (this._chunks.has(chunk_idx)) {
       const chunk = this._chunks.get(chunk_idx)!;
@@ -87,26 +85,30 @@ export class ArrowModel extends DataModel {
         // Wait for Promise to complete and mark data as modified
         return this._loadingRepr;
       }
+
       // We have data
       const row_idx_in_chunk = row % this._rowChunkSize;
       const col_idx_in_chunk = col % this._colChunkSize;
-      return chunk.getChildAt(col_idx_in_chunk)?.get(row_idx_in_chunk).toString();
+      const out = chunk.getChildAt(col_idx_in_chunk)?.get(row_idx_in_chunk).toString();
+
+      // Prefetch next chunks only once we have data for the current chunk.
+      // We chain the Promise because this can be considered a low priority operation so we want
+      // to reduce load on the server
+      const [row_chunk, col_chunk] = chunk_idx;
+      this.prefetchChunkIfNeeded([row_chunk + 1, col_chunk]).then((_) => {
+        this.prefetchChunkIfNeeded([row_chunk, col_chunk + 1]);
+      });
+
+      return out;
     }
 
     // Fetch data, however we cannot await it due to the interface required by the DataGrid.
     // Instead, we fire the request, and notify of change upon completion.
     const promise = this.fetchChunk(chunk_idx).then((table) => {
       this._chunks.set(chunk_idx, table);
-      this.emitChanged({
-        type: "cells-changed",
-        region: "body",
-        row: row_chunk * this._rowChunkSize,
-        rowSpan: this._rowChunkSize,
-        column: col_chunk * this._colChunkSize,
-        columnSpan: this._colChunkSize,
-      });
+      this.emitChangedChunk(chunk_idx);
     });
-    this._chunks.set([row_chunk, col_chunk], promise);
+    this._chunks.set(chunk_idx, promise);
 
     return this._loadingRepr;
   }
@@ -122,6 +124,29 @@ export class ArrowModel extends DataModel {
     });
   }
 
+  private emitChangedChunk(chunk_idx: [number, number]) {
+    const [row_chunk, col_chunk] = chunk_idx;
+    this.emitChanged({
+      type: "cells-changed",
+      region: "body",
+      row: row_chunk * this._rowChunkSize,
+      rowSpan: this._rowChunkSize,
+      column: col_chunk * this._colChunkSize,
+      columnSpan: this._colChunkSize,
+    });
+  }
+
+  private async prefetchChunkIfNeeded(chunk_idx: [number, number]) {
+    if (this._chunks.has(chunk_idx) || !this.chunkIsValid(chunk_idx)) {
+      return;
+    }
+
+    const promise = this.fetchChunk(chunk_idx).then((table) => {
+      this._chunks.set(chunk_idx, table);
+    });
+    this._chunks.set(chunk_idx, promise);
+  }
+
   private async fetchSchema() {
     const table = await fetchTable({
       path: this._path,
@@ -129,6 +154,18 @@ export class ArrowModel extends DataModel {
       row_chunk: 0,
     });
     return table.schema;
+  }
+
+  private chunkIdx(row: number, col: number): [number, number] {
+    return [Math.floor(row / this._rowChunkSize), Math.floor(col / this._colChunkSize)];
+  }
+
+  private chunkIsValid(chunk_idx: [number, number]): boolean {
+    const [row_chunk, col_chunk] = chunk_idx;
+    const [max_row_chunk, max_col_chunk] = this.chunkIdx(this._numRows - 1, this._numCols - 1);
+    return (
+      row_chunk >= 0 && row_chunk <= max_row_chunk && col_chunk >= 0 && col_chunk <= max_col_chunk
+    );
   }
 
   private _path: string;
