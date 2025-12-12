@@ -1,25 +1,34 @@
 import { LabIcon } from "@jupyterlab/ui-components";
 import arrowIPCSvg from "../style/icons/arrow.svg";
 import avroSvg from "../style/icons/avro.svg";
-import orcSvg from "../style/icons/orc.svg";
-import parquetSvg from "../style/icons/parquet.svg";
+import orcLightSvg from "../style/icons/orc.svg";
+import orcDarkSvg from "../style/icons/orc_light.svg";
+import parquetSvgLight from "../style/icons/parquet_dark.svg";
+import parquetSvgDark from "../style/icons/parquet_light.svg";
 
-export const arrowIPC = new LabIcon({
-  name: "arbalister:arrowipc",
-  svgstr: arrowIPCSvg,
+export const getLabIcon=(labIconName:string, iconSvg:string) => {
+  return  new LabIcon({
+  name: `arbalister:${labIconName}`,
+  svgstr: iconSvg,
 });
+}
 
-export const avroIcon = new LabIcon({
-  name: "arbalister:avro",
-  svgstr: avroSvg,
-});
+export const getIcon=(iconName: string, isLight: boolean)=>{
+  let icon:LabIcon | undefined = undefined;
+  switch(iconName){
+    case 'parquet':
+     icon = getLabIcon(iconName, isLight? parquetSvgLight : parquetSvgDark);
+      break;
+      case 'arrowipc':
+        icon = getLabIcon(iconName, isLight? arrowIPCSvg : arrowIPCSvg);
+      break;
+      case 'orc':
+        icon = getLabIcon(iconName, isLight? orcLightSvg : orcDarkSvg);
+      break;
+      case 'avro':
+        icon = getLabIcon(iconName, isLight? avroSvg : avroSvg);
+      break;  
+  }
+  return icon;
+}
 
-export const orcIcon = new LabIcon({
-  name: "arbalister:orc",
-  svgstr: orcSvg,
-});
-
-export const parquetIcon = new LabIcon({
-  name: "arbalister:parquet",
-  svgstr: parquetSvg,
-});

@@ -10,7 +10,7 @@ import type { DataGrid } from "@lumino/datagrid";
 
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
-import { arrowIPC, avroIcon, orcIcon, parquetIcon } from "./labicons";
+import { getIcon } from "./labicons";
 
 export namespace NoOpContentProvider {
   export interface IOptions {
@@ -169,12 +169,13 @@ function activateArrowGrid(
     });
     registry.register(NOOP_CONTENT_PROVIDER_ID, noOpContentProvider);
   }
-
+const currentTheme = themeManager?.theme;
+const isLight = themeManager?.isLight(currentTheme as string) ?? true;
   const csv_ft = ensureCsvFileType(app.docRegistry);
-  const prq_ft = addParquetFileType(app.docRegistry, { icon: parquetIcon });
-  const avo_ft = addAvroFileType(app.docRegistry, { icon: avroIcon });
-  const ipc_ft = addIpcFileType(app.docRegistry, { icon: arrowIPC });
-  const orc_ft = addOrcFileType(app.docRegistry, { icon: orcIcon });
+  const prq_ft = addParquetFileType(app.docRegistry, { icon: getIcon('parquet', isLight) }, );
+  const avo_ft = addAvroFileType(app.docRegistry, { icon: getIcon('avro', isLight) });
+  const ipc_ft = addIpcFileType(app.docRegistry, { icon: getIcon('arrowipc', isLight) });
+  const orc_ft = addOrcFileType(app.docRegistry, { icon: getIcon('orc', isLight) });
 
   const factory = new ArrowGridViewerFactory({
     name: factory_arrow,
@@ -185,6 +186,7 @@ function activateArrowGrid(
     translator,
     contentProviderId: NOOP_CONTENT_PROVIDER_ID,
   });
+
   const tracker = new WidgetTracker<IDocumentWidget<ArrowGridViewer>>({
     namespace: "arrowviewer",
   });
