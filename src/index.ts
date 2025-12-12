@@ -8,6 +8,7 @@ import type * as services from "@jupyterlab/services";
 import type { Contents } from "@jupyterlab/services";
 import type { DataGrid } from "@lumino/datagrid";
 
+import { getIcon } from "./labicons";
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
 
@@ -168,12 +169,13 @@ function activateArrowGrid(
     });
     registry.register(NOOP_CONTENT_PROVIDER_ID, noOpContentProvider);
   }
-
+  const currentTheme = themeManager?.theme;
+  const isLight = themeManager?.isLight(currentTheme as string) ?? true;
   const csv_ft = ensureCsvFileType(app.docRegistry);
-  const prq_ft = addParquetFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const avo_ft = addAvroFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const ipc_ft = addIpcFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const orc_ft = addOrcFileType(app.docRegistry, { icon: csv_ft?.icon });
+  let prq_ft = addParquetFileType(app.docRegistry, { icon: getIcon("parquet", isLight) });
+  let avo_ft = addAvroFileType(app.docRegistry, { icon: getIcon("avro", isLight) });
+  let ipc_ft = addIpcFileType(app.docRegistry, { icon: getIcon("arrowipc", isLight) });
+  let orc_ft = addOrcFileType(app.docRegistry, { icon: getIcon("orc", isLight) });
 
   const factory = new ArrowGridViewerFactory({
     name: factory_arrow,
@@ -231,6 +233,11 @@ function activateArrowGrid(
       widget.content.style = style;
       widget.content.rendererConfig = rendererConfig;
     });
+
+    prq_ft = addParquetFileType(app.docRegistry, { icon: getIcon("parquet", isLight) });
+    avo_ft = addAvroFileType(app.docRegistry, { icon: getIcon("avro", isLight) });
+    ipc_ft = addIpcFileType(app.docRegistry, { icon: getIcon("arrowipc", isLight) });
+    orc_ft = addOrcFileType(app.docRegistry, { icon: getIcon("orc", isLight) });
   };
   if (themeManager) {
     themeManager.themeChanged.connect((_, args) => {
