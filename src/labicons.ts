@@ -1,5 +1,6 @@
 import { LabIcon } from "@jupyterlab/ui-components";
 import arrowIPCSvg from "../style/icons/arrow.svg";
+import arrowIPCDarkSvg from "../style/icons/arrow_dark.svg";
 import avroSvg from "../style/icons/avro.svg";
 import orcLightSvg from "../style/icons/orc.svg";
 import orcDarkSvg from "../style/icons/orc_light.svg";
@@ -20,7 +21,7 @@ export const getIcon=(iconName: string, isLight: boolean)=>{
      icon = getLabIcon(iconName, isLight? parquetSvgLight : parquetSvgDark);
       break;
       case 'arrowipc':
-        icon = getLabIcon(iconName, isLight? arrowIPCSvg : arrowIPCSvg);
+        icon = getLabIcon(iconName, isLight? arrowIPCSvg : arrowIPCDarkSvg);
       break;
       case 'orc':
         icon = getLabIcon(iconName, isLight? orcLightSvg : orcDarkSvg);
