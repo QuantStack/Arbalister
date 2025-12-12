@@ -43,7 +43,7 @@ export class ArrowModel extends DataModel {
     return this._ready;
   }
 
-  private get schema(): Arrow.Schema {
+  get schema(): Arrow.Schema {
     return this._schema;
   }
 
