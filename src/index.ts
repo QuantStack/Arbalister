@@ -186,7 +186,6 @@ function activateArrowGrid(
     translator,
     contentProviderId: NOOP_CONTENT_PROVIDER_ID,
   });
-
   const tracker = new WidgetTracker<IDocumentWidget<ArrowGridViewer>>({
     namespace: "arrowviewer",
   });

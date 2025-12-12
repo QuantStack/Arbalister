@@ -1,5 +1,4 @@
 import { LabIcon } from "@jupyterlab/ui-components";
-
 import arrowIPCSvg from "../style/icons/arrow.svg";
 import arrowIPCDarkSvg from "../style/icons/arrow_dark.svg";
 import avroSvg from "../style/icons/avro.svg";
