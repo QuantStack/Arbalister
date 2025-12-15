@@ -80,51 +80,57 @@ def dummy_table_file(
 JpFetch = Callable[..., Awaitable[tornado.httpclient.HTTPResponse]]
 
 
-@pytest.mark.parametrize(
-    "params",
-    [
-        arb.routes.IpcParams(),
+@pytest.fixture(
+    params=[
+        # No limits
+        lambda table: arb.routes.IpcParams(),
         # Limit only number of rows
-        arb.routes.IpcParams(row_chunk=0, row_chunk_size=3),
-        arb.routes.IpcParams(row_chunk=1, row_chunk_size=2),
-        arb.routes.IpcParams(row_chunk=0, row_chunk_size=DUMMY_TABLE_1_ROW_COUNT),
-        arb.routes.IpcParams(row_chunk=1, row_chunk_size=DUMMY_TABLE_1_ROW_COUNT // 2 + 1),
+        lambda table: arb.routes.IpcParams(row_chunk=0, row_chunk_size=3),
+        lambda table: arb.routes.IpcParams(row_chunk=1, row_chunk_size=2),
+        lambda table: arb.routes.IpcParams(row_chunk=0, row_chunk_size=table.num_rows),
+        lambda table: arb.routes.IpcParams(row_chunk=1, row_chunk_size=table.num_rows // 2 + 1),
         # Limit only number of cols
-        arb.routes.IpcParams(col_chunk=0, col_chunk_size=3),
-        arb.routes.IpcParams(col_chunk=1, col_chunk_size=2),
-        arb.routes.IpcParams(col_chunk=0, col_chunk_size=DUMMY_TABLE_1_COL_COUNT),
-        arb.routes.IpcParams(col_chunk=1, col_chunk_size=DUMMY_TABLE_1_COL_COUNT // 2 + 1),
+        lambda table: arb.routes.IpcParams(col_chunk=0, col_chunk_size=3),
+        lambda table: arb.routes.IpcParams(col_chunk=1, col_chunk_size=2),
+        lambda table: arb.routes.IpcParams(col_chunk=0, col_chunk_size=table.num_columns),
+        lambda table: arb.routes.IpcParams(col_chunk=1, col_chunk_size=table.num_columns // 2 + 1),
         # Limit both
-        arb.routes.IpcParams(
+        lambda table: arb.routes.IpcParams(
             row_chunk=0,
             row_chunk_size=3,
             col_chunk=1,
-            col_chunk_size=DUMMY_TABLE_1_COL_COUNT // 2 + 1,
+            col_chunk_size=table.num_columns // 2 + 1,
         ),
-        arb.routes.IpcParams(
+        lambda table: arb.routes.IpcParams(
             row_chunk=0,
-            row_chunk_size=DUMMY_TABLE_1_ROW_COUNT,
+            row_chunk_size=table.num_rows,
             col_chunk=1,
             col_chunk_size=2,
         ),
         # Schema only
-        arb.routes.IpcParams(
+        lambda table: arb.routes.IpcParams(
             row_chunk=0,
             row_chunk_size=0,
         ),
-    ],
+    ]
 )
-async def test_ipc_route_limit_row(
+def ipc_params(request: pytest.FixtureRequest, dummy_table_1: pa.Table) -> arb.routes.IpcParams:
+    """Parameters used to select the IPC data in the response."""
+    make_table: Callable[[pa.Table], arb.routes.IpcParams] = request.param
+    return make_table(dummy_table_1)
+
+
+async def test_ipc_route_limit(
     jp_fetch: JpFetch,
     dummy_table_1: pa.Table,
     dummy_table_file: pathlib.Path,
-    params: arb.routes.IpcParams,
+    ipc_params: arb.routes.IpcParams,
 ) -> None:
     """Test fetching a file returns the limited rows and columns in IPC."""
     response = await jp_fetch(
         "arrow/stream",
         str(dummy_table_file),
-        params={k: v for k, v in dataclasses.asdict(params).items() if v is not None},
+        params={k: v for k, v in dataclasses.asdict(ipc_params).items() if v is not None},
     )
 
     assert response.code == 200
@@ -134,13 +140,13 @@ async def test_ipc_route_limit_row(
     expected = dummy_table_1
 
     # Row slicing
-    if (size := params.row_chunk_size) is not None and (cidx := params.row_chunk) is not None:
+    if (size := ipc_params.row_chunk_size) is not None and (cidx := ipc_params.row_chunk) is not None:
         expected_num_rows = min((size * (cidx + 1)), expected.num_rows) - (size * cidx)
         assert payload.num_rows == expected_num_rows
         expected = expected.slice(cidx * size, size)
 
     # Col slicing
-    if (size := params.col_chunk_size) is not None and (cidx := params.col_chunk) is not None:
+    if (size := ipc_params.col_chunk_size) is not None and (cidx := ipc_params.col_chunk) is not None:
         expected_num_cols = min((size * (cidx + 1)), len(expected.schema)) - (size * cidx)
         assert len(payload.schema) == expected_num_cols
         col_names = expected.schema.names
