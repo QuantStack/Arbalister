@@ -12,10 +12,13 @@ import tornado
 import arbalister as arb
 
 
-@pytest.fixture(params=list(arb.arrow.FileFormat), scope="session")
-def file_format(request: pytest.FixtureRequest) -> arb.arrow.FileFormat:
+@pytest.fixture(
+    params=[f for f in arb.file_format.FileFormat if f != arb.file_format.FileFormat.Sqlite],
+    scope="session",
+)
+def file_format(request: pytest.FixtureRequest) -> arb.file_format.FileFormat:
     """Parametrize the file format used in the test."""
-    out: arb.arrow.FileFormat = request.param
+    out: arb.file_format.FileFormat = request.param
     return out
 
 
@@ -39,7 +42,7 @@ def dummy_table() -> pa.Table:
 
 @pytest.fixture
 def dummy_table_file(
-    jp_root_dir: pathlib.Path, dummy_table: pa.Table, file_format: arb.arrow.FileFormat
+    jp_root_dir: pathlib.Path, dummy_table: pa.Table, file_format: arb.file_format.FileFormat
 ) -> pathlib.Path:
     """Write the dummy table to file."""
     write_table = arb.arrow.get_table_writer(file_format)

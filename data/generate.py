@@ -9,6 +9,7 @@ import pyarrow as pa
 import pyarrow.parquet as paq
 
 import arbalister.arrow as aa
+from arbalister import file_format as ff
 
 MAX_FAKER_ROWS = 100_000
 
@@ -81,7 +82,7 @@ def sink_coordinate_table(
     num_rows: int, num_cols: int, path: pathlib.Path, chunk_size: int = 1_000_000
 ) -> None:
     """Write iteratively a table where each cell has its coordinates."""
-    assert aa.FileFormat.from_filename(path) == aa.FileFormat.Parquet
+    assert ff.FileFormat.from_filename(path) == ff.FileFormat.Parquet
     print("Initializing session context", flush=True)
     ctx = dn.SessionContext()
     print("Generating schema", flush=True)
@@ -97,7 +98,7 @@ def configure_command_single(cmd: argparse.ArgumentParser) -> argparse.ArgumentP
     cmd.add_argument(
         "--output-type",
         "-t",
-        choices=[t.name.lower() for t in aa.FileFormat],
+        choices=[t.name.lower() for t in ff.FileFormat],
         default=None,
         help="Output file type",
     )
@@ -149,7 +150,7 @@ def shuffle_table(table: pa.Table, seed: int | None = None) -> pa.Table:
     return table.select(col_order).take(row_indices)
 
 
-def save_table(table: pa.Table, path: pathlib.Path, file_type: aa.FileFormat) -> None:
+def save_table(table: pa.Table, path: pathlib.Path, file_type: ff.FileFormat) -> None:
     """Save a table to file with the given file type."""
     path.parent.mkdir(exist_ok=True, parents=True)
     write_table = aa.get_table_writer(file_type)
@@ -165,13 +166,13 @@ def main() -> None:
 
     match args.command:
         case "single":
-            ft = next((t for t in aa.FileFormat if t.name.lower() == args.output_type), None)
+            ft = next((t for t in ff.FileFormat if t.name.lower() == args.output_type), None)
             if ft is None:
-                ft = aa.FileFormat.from_filename(args.output_file)
+                ft = ff.FileFormat.from_filename(args.output_file)
             save_table(shuffle_table(table), args.output_file, ft)
         case "batch":
             for p in args.output_file:
-                ft = aa.FileFormat.from_filename(p)
+                ft = ff.FileFormat.from_filename(p)
                 save_table(shuffle_table(table), p, ft)
         case "coordinate":
             sink_coordinate_table(num_rows=args.num_rows, num_cols=args.num_cols, path=args.output_file)

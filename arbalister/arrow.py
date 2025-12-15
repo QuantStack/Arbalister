@@ -1,39 +1,10 @@
-import enum
 import pathlib
-from typing import Any, Callable, Self
+from typing import Any, Callable
 
 import datafusion as dn
 import pyarrow as pa
 
-
-class FileFormat(enum.StrEnum):
-    """Known file format that we can read into an Arrow format.
-
-    Todo:
-    - ADBC (Sqlite/Postgres)
-
-    """
-
-    Avro = "avro"
-    Csv = "csv"
-    Ipc = "ipc"
-    Orc = "orc"
-    Parquet = "parquet"
-
-    @classmethod
-    def from_filename(cls, file: pathlib.Path | str) -> Self:
-        """Get the file format from a filename extension."""
-        file_type = pathlib.Path(file).suffix.removeprefix(".").strip().lower()
-
-        # Match again their default value
-        if ft := next((ft for ft in FileFormat if str(ft) == file_type), None):
-            return ft
-        # Match other known values
-        match file_type:
-            case "ipc" | "feather":
-                return cls.Ipc
-        raise ValueError(f"Unknown file type {file_type}")
-
+from . import file_format as ff
 
 ReadCallable = Callable[..., dn.DataFrame]
 
@@ -84,7 +55,7 @@ def _write_avro(
         writer.close()
 
 
-def get_table_reader(format: FileFormat) -> ReadCallable:
+def get_table_reader(format: ff.FileFormat) -> ReadCallable:
     """Get the datafusion reader factory function for the given format."""
     # TODO: datafusion >= 50.0
     #  def read(ctx: dtfn.SessionContext, path: str | pathlib.Path, *args, **kwargs) -> dtfn.DataFrame:
@@ -92,13 +63,13 @@ def get_table_reader(format: FileFormat) -> ReadCallable:
     #      return ctx.read_table(ds, *args, **kwargs)
     out: ReadCallable
     match format:
-        case FileFormat.Avro:
+        case ff.FileFormat.Avro:
             out = dn.SessionContext.read_avro
-        case FileFormat.Csv:
+        case ff.FileFormat.Csv:
             out = dn.SessionContext.read_csv
-        case FileFormat.Parquet:
+        case ff.FileFormat.Parquet:
             out = dn.SessionContext.read_parquet
-        case FileFormat.Ipc:
+        case ff.FileFormat.Ipc:
             import pyarrow.feather
 
             def read_ipc(
@@ -109,7 +80,7 @@ def get_table_reader(format: FileFormat) -> ReadCallable:
                 return ctx.from_arrow(table)
 
             out = read_ipc
-        case FileFormat.Orc:
+        case ff.FileFormat.Orc:
             # Watch for https://github.com/datafusion-contrib/datafusion-orc
             # Evolution for native datafusion reader
             import pyarrow.orc
@@ -121,6 +92,8 @@ def get_table_reader(format: FileFormat) -> ReadCallable:
                 return ctx.from_arrow(table)
 
             out = read_orc
+        case ff.FileFormat.Sqlite:
+            raise NotImplementedError("Sqlite not available in Python Datafusion")
 
     return out
 
@@ -128,26 +101,28 @@ def get_table_reader(format: FileFormat) -> ReadCallable:
 WriteCallable = Callable[..., None]
 
 
-def get_table_writer(format: FileFormat) -> WriteCallable:
+def get_table_writer(format: ff.FileFormat) -> WriteCallable:
     """Get the arrow writer factory function for the given format."""
     out: WriteCallable
     match format:
-        case FileFormat.Avro:
+        case ff.FileFormat.Avro:
             out = _write_avro
-        case FileFormat.Csv:
+        case ff.FileFormat.Csv:
             import pyarrow.csv
 
             out = pyarrow.csv.write_csv
-        case FileFormat.Parquet:
+        case ff.FileFormat.Parquet:
             import pyarrow.parquet
 
             out = pyarrow.parquet.write_table
-        case FileFormat.Ipc:
+        case ff.FileFormat.Ipc:
             import pyarrow.feather
 
             out = pyarrow.feather.write_feather
-        case FileFormat.Orc:
+        case ff.FileFormat.Orc:
             import pyarrow.orc
 
             out = pyarrow.orc.write_table
+        case ff.FileFormat.Sqlite:
+            raise NotImplementedError("Sqlite not available in Python Datafusion")
     return out

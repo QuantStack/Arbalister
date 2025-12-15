@@ -11,6 +11,7 @@ import tornado
 from jupyter_server.utils import url_path_join
 
 from . import arrow as abw
+from . import file_format as ff
 from . import params as params
 
 
@@ -33,7 +34,7 @@ class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
         Note: On some file type, the file is read eagerly when calling this method.
         """
         file = self.data_file(path)
-        read_table = abw.get_table_reader(format=abw.FileFormat.from_filename(file))
+        read_table = abw.get_table_reader(format=ff.FileFormat.from_filename(file))
         return read_table(self.context, file)
 
     def get_query_params_as[T](self, dataclass_type: type[T]) -> T:
