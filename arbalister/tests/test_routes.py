@@ -21,7 +21,7 @@ import arbalister.file_format as ff
         (ff.FileFormat.Orc, arb.routes.NoReadParams()),
         (ff.FileFormat.Parquet, arb.routes.NoReadParams()),
         (ff.FileFormat.Sqlite, arb.routes.NoReadParams()),
-        (ff.FileFormat.Sqlite, arb.routes.SqliteReadParams(table_name="SuperData")),
+        (ff.FileFormat.Sqlite, arb.routes.SqliteReadParams(table_name="dummy_table_2")),
     ],
     ids=lambda f_p: f"{f_p[0].value}-{dataclasses.asdict(f_p[1])}",
     scope="module",
@@ -77,8 +77,19 @@ def dummy_table_2(num_rows: int = 13) -> pa.Table:
     return table
 
 
+@pytest.fixture(scope="module")
+def full_table(file_params: ff.FileFormat, dummy_table_1: pa.Table, dummy_table_2: pa.Table) -> pa.Table:
+    """Return the full table on which we are executed queries."""
+    if isinstance(file_params, arb.routes.SqliteReadParams):
+        return {
+            "dummy_table_1": dummy_table_1,
+            "dummy_table_2": dummy_table_2,
+        }[file_params.table_name]
+    return dummy_table_1
+
+
 @pytest.fixture
-def dummy_table_file(
+def table_file(
     jp_root_dir: pathlib.Path,
     dummy_table_1: pa.Table,
     dummy_table_2: pa.Table,
@@ -92,12 +103,7 @@ def dummy_table_file(
     match file_format:
         case ff.FileFormat.Sqlite:
             write_table(dummy_table_1, table_path, table_name="dummy_table_1", mode="create_append")
-            table_2_name = (
-                file_params.table_name
-                if isinstance(file_params, arb.routes.SqliteReadParams)
-                else "dummy_table_2"
-            )
-            write_table(dummy_table_2, table_path, table_name=table_2_name, mode="create_append")
+            write_table(dummy_table_2, table_path, table_name="dummy_table_2", mode="create_append")
         case _:
             write_table(dummy_table_1, table_path)
 
@@ -149,16 +155,15 @@ def ipc_params(request: pytest.FixtureRequest, dummy_table_1: pa.Table) -> arb.r
 
 async def test_ipc_route_limit(
     jp_fetch: JpFetch,
-    dummy_table_1: pa.Table,
-    dummy_table_2: pa.Table,
-    dummy_table_file: pathlib.Path,
+    full_table: pa.Table,
+    table_file: pathlib.Path,
     ipc_params: arb.routes.IpcParams,
     file_params: arb.routes.SqliteReadParams,
 ) -> None:
     """Test fetching a file returns the limited rows and columns in IPC."""
     response = await jp_fetch(
         "arrow/stream",
-        str(dummy_table_file),
+        str(table_file),
         params={
             k: v
             for k, v in {**dataclasses.asdict(ipc_params), **dataclasses.asdict(file_params)}.items()
@@ -170,7 +175,7 @@ async def test_ipc_route_limit(
     assert response.headers["Content-Type"] == "application/vnd.apache.arrow.stream"
     payload = pa.ipc.open_stream(response.body).read_all()
 
-    expected = dummy_table_2 if isinstance(file_params, arb.routes.SqliteReadParams) else dummy_table_1
+    expected = full_table
 
     # Row slicing
     if (size := ipc_params.row_chunk_size) is not None and (cidx := ipc_params.row_chunk) is not None:
@@ -192,23 +197,20 @@ async def test_ipc_route_limit(
 
 async def test_stats_route(
     jp_fetch: JpFetch,
-    dummy_table_1: pa.Table,
-    dummy_table_2: pa.Table,
-    dummy_table_file: pathlib.Path,
+    full_table: pa.Table,
+    table_file: pathlib.Path,
     file_params: arb.routes.SqliteReadParams,
 ) -> None:
     """Test fetching a file returns the correct metadata in Json."""
     response = await jp_fetch(
         "arrow/stats/",
-        str(dummy_table_file),
+        str(table_file),
         params={k: v for k, v in dataclasses.asdict(file_params).items() if v is not None},
     )
 
     assert response.code == 200
     assert response.headers["Content-Type"] == "application/json; charset=UTF-8"
 
-    expected = dummy_table_2 if isinstance(file_params, arb.routes.SqliteReadParams) else dummy_table_1
-
     payload = json.loads(response.body)
-    assert payload["num_cols"] == len(expected.schema)
-    assert payload["num_rows"] == expected.num_rows
+    assert payload["num_cols"] == len(full_table.schema)
+    assert payload["num_rows"] == full_table.num_rows
