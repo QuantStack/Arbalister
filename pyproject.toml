@@ -229,6 +229,7 @@ python data/generate.py batch \
     -o data/gen/test.ipc \
     -o data/gen/test.orc \
     -o data/gen/test.parquet \
+    -o data/gen/test.sqlite \
 """
 outputs = ["data/gen/**/test.*"]
 description = """Generate different data files to use in development in data/gen."""
