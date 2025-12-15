@@ -24,8 +24,15 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["jupyter_server>=2.4.0,<3", "pyarrow>=20.0", "datafusion>=40.0"]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
+dependencies = [
+  "jupyter_server>=2.4.0,<3",
+  "pyarrow>=20.0",
+  "datafusion>=40.0",
+  # Optional dependencies
+  "adbc_driver_manager",
+  "adbc_driver_sqlite",
+]
 
 [tool.hatch.version]
 source = "nodejs"
@@ -115,6 +122,8 @@ nodejs = "*"
 jupyter_server = "*"
 pyarrow = "*"
 datafusion = "*"
+adbc-driver-manager = "*"
+adbc-driver-sqlite = "*"
 
 [tool.pixi.pypi-dependencies]
 arbalister = { path = ".", editable = true }
