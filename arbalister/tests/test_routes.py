@@ -10,13 +10,44 @@ import pytest
 import tornado
 
 import arbalister as arb
+import arbalister.file_format as ff
 
 
-@pytest.fixture(params=list(arb.file_format.FileFormat), scope="session")
-def file_format(request: pytest.FixtureRequest) -> arb.file_format.FileFormat:
-    """Parametrize the file format used in the test."""
-    out: arb.file_format.FileFormat = request.param
+@pytest.fixture(
+    params=[
+        (ff.FileFormat.Avro, arb.routes.NoReadParams()),
+        (ff.FileFormat.Csv, arb.routes.NoReadParams()),
+        (ff.FileFormat.Ipc, arb.routes.NoReadParams()),
+        (ff.FileFormat.Orc, arb.routes.NoReadParams()),
+        (ff.FileFormat.Parquet, arb.routes.NoReadParams()),
+        (ff.FileFormat.Sqlite, arb.routes.NoReadParams()),
+        (ff.FileFormat.Sqlite, arb.routes.SqliteReadParams(table_name="SuperData")),
+    ],
+    ids=lambda f_p: f"{f_p[0].value}-{dataclasses.asdict(f_p[1])}",
+    scope="module",
+)
+def file_format_and_params(request: pytest.FixtureRequest) -> tuple[ff.FileFormat, arb.routes.FileReadParams]:
+    """Parametrize the file format and file parameters used in the tests.
+
+    This is used to to build test cases with a give set of parameters since each file format may be tested
+    with a different number of parameters.
+    """
+    out: tuple[ff.FileFormat, arb.routes.FileReadParams] = request.param
     return out
+
+
+@pytest.fixture(scope="module")
+def file_format(file_format_and_params: tuple[ff.FileFormat, arb.routes.FileReadParams]) -> ff.FileFormat:
+    """Extract the the file format fixture value used in the tests."""
+    return file_format_and_params[0]
+
+
+@pytest.fixture(scope="module")
+def file_params(
+    file_format_and_params: tuple[ff.FileFormat, arb.routes.FileReadParams],
+) -> arb.routes.FileReadParams:
+    """Extract the the file parameters fixture value used in the tests."""
+    return file_format_and_params[1]
 
 
 @pytest.fixture(scope="module")
@@ -51,16 +82,22 @@ def dummy_table_file(
     jp_root_dir: pathlib.Path,
     dummy_table_1: pa.Table,
     dummy_table_2: pa.Table,
-    file_format: arb.file_format.FileFormat,
+    file_format: ff.FileFormat,
+    file_params: arb.routes.FileReadParams,
 ) -> pathlib.Path:
     """Write the dummy table to file."""
     write_table = arb.arrow.get_table_writer(file_format)
     table_path = jp_root_dir / f"test.{str(file_format).lower()}"
 
     match file_format:
-        case arb.file_format.FileFormat.Sqlite:
+        case ff.FileFormat.Sqlite:
             write_table(dummy_table_1, table_path, table_name="dummy_table_1", mode="create_append")
-            write_table(dummy_table_2, table_path, table_name="dummy_table_2", mode="create_append")
+            table_2_name = (
+                file_params.table_name
+                if isinstance(file_params, arb.routes.SqliteReadParams)
+                else "dummy_table_2"
+            )
+            write_table(dummy_table_2, table_path, table_name=table_2_name, mode="create_append")
         case _:
             write_table(dummy_table_1, table_path)
 
@@ -113,21 +150,27 @@ def ipc_params(request: pytest.FixtureRequest, dummy_table_1: pa.Table) -> arb.r
 async def test_ipc_route_limit(
     jp_fetch: JpFetch,
     dummy_table_1: pa.Table,
+    dummy_table_2: pa.Table,
     dummy_table_file: pathlib.Path,
     ipc_params: arb.routes.IpcParams,
+    file_params: arb.routes.SqliteReadParams,
 ) -> None:
     """Test fetching a file returns the limited rows and columns in IPC."""
     response = await jp_fetch(
         "arrow/stream",
         str(dummy_table_file),
-        params={k: v for k, v in dataclasses.asdict(ipc_params).items() if v is not None},
+        params={
+            k: v
+            for k, v in {**dataclasses.asdict(ipc_params), **dataclasses.asdict(file_params)}.items()
+            if v is not None
+        },
     )
 
     assert response.code == 200
     assert response.headers["Content-Type"] == "application/vnd.apache.arrow.stream"
     payload = pa.ipc.open_stream(response.body).read_all()
 
-    expected = dummy_table_1
+    expected = dummy_table_2 if isinstance(file_params, arb.routes.SqliteReadParams) else dummy_table_1
 
     # Row slicing
     if (size := ipc_params.row_chunk_size) is not None and (cidx := ipc_params.row_chunk) is not None:
@@ -148,14 +191,24 @@ async def test_ipc_route_limit(
 
 
 async def test_stats_route(
-    jp_fetch: JpFetch, dummy_table_1: pa.Table, dummy_table_file: pathlib.Path
+    jp_fetch: JpFetch,
+    dummy_table_1: pa.Table,
+    dummy_table_2: pa.Table,
+    dummy_table_file: pathlib.Path,
+    file_params: arb.routes.SqliteReadParams,
 ) -> None:
     """Test fetching a file returns the correct metadata in Json."""
-    response = await jp_fetch("arrow/stats/", str(dummy_table_file))
+    response = await jp_fetch(
+        "arrow/stats/",
+        str(dummy_table_file),
+        params={k: v for k, v in dataclasses.asdict(file_params).items() if v is not None},
+    )
 
     assert response.code == 200
     assert response.headers["Content-Type"] == "application/json; charset=UTF-8"
 
+    expected = dummy_table_2 if isinstance(file_params, arb.routes.SqliteReadParams) else dummy_table_1
+
     payload = json.loads(response.body)
-    assert payload["num_cols"] == len(dummy_table_1.schema)
-    assert payload["num_rows"] == dummy_table_1.num_rows
+    assert payload["num_cols"] == len(expected.schema)
+    assert payload["num_rows"] == expected.num_rows
