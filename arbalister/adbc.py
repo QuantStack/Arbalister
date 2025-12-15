@@ -1,6 +1,6 @@
 import dataclasses
 import pathlib
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import adbc_driver_sqlite.dbapi as adbc_sqlite
 import pyarrow as pa
@@ -11,11 +11,12 @@ def write_sqlite(
     path: str | pathlib.Path,
     table_name: str = "Table",
     catalog_name: str | None = None,
+    mode: Literal["append", "create", "replace", "create_append"] = "create",
 ) -> None:
     """Write a table as an Sqlite file."""
     with adbc_sqlite.connect(str(path)) as connection:
         with connection.cursor() as cursor:
-            cursor.adbc_ingest(table_name=table_name, data=table, mode="create", catalog_name=catalog_name)
+            cursor.adbc_ingest(table_name=table_name, data=table, mode=mode, catalog_name=catalog_name)
         connection.commit()
 
 
@@ -40,16 +41,19 @@ class SqliteDataFrame:
     def read_sqlite(cls, context: Any, path: pathlib.Path | str, table_name: str | None = None) -> Self:
         """Read an Sqlite file metadata and start a new DataFrame plan."""
         with adbc_sqlite.connect(str(path)) as connection:
-            tables = connection.adbc_get_table_types()
-            if table_name is None and len(tables) > 0:
-                table_name = tables[0]
-            elif table_name not in tables:
-                raise ValueError(f"Invalid table name {table_name}")
-            schema = connection.adbc_get_table_schema(table_name)
-
             with connection.cursor() as cursor:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = [row for (row,) in cursor.fetchall()]
+
+                if table_name is None and len(tables) > 0:
+                    table_name = tables[0]
+                if table_name not in tables or table_name is None:
+                    raise ValueError(f"Invalid table name {table_name}")
+
                 cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
                 num_rows = cursor.fetchone()[0]  # type: ignore[index]
+
+            schema = connection.adbc_get_table_schema(table_name)
 
             return cls(_path=str(path), _table_name=table_name, _schema=schema, _num_rows=num_rows)
 

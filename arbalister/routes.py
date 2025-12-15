@@ -15,6 +15,21 @@ from . import file_format as ff
 from . import params as params
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class SqliteReadParams:
+    """Query parameter for the Sqlite reader."""
+
+    table_name: str | None = None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class NoReadParams:
+    """Query parameter for readers with no parameters."""
+
+
+FileReadParams = SqliteReadParams | NoReadParams
+
+
 class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
     """A base handler to share common methods."""
 
@@ -34,12 +49,21 @@ class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
         Note: On some file type, the file is read eagerly when calling this method.
         """
         file = self.data_file(path)
-        read_table = abw.get_table_reader(format=ff.FileFormat.from_filename(file))
-        return read_table(self.context, file)
+        file_format = ff.FileFormat.from_filename(file)
+        file_params = self.get_file_read_params(file_format)
+        read_table = abw.get_table_reader(format=file_format)
+        return read_table(self.context, file, **dataclasses.asdict(file_params))
 
     def get_query_params_as[T](self, dataclass_type: type[T]) -> T:
         """Extract query parameters into a dataclass type."""
         return params.build_dataclass(dataclass_type, self.get_query_argument)
+
+    def get_file_read_params(self, file_format: ff.FileFormat) -> FileReadParams:
+        """Read the parameters associated with the relevant file format."""
+        match file_format:
+            case ff.FileFormat.Sqlite:
+                return self.get_query_params_as(SqliteReadParams)
+        return NoReadParams()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
