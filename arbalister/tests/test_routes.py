@@ -12,10 +12,7 @@ import tornado
 import arbalister as arb
 
 
-@pytest.fixture(
-    params=[f for f in arb.file_format.FileFormat if f != arb.file_format.FileFormat.Sqlite],
-    scope="session",
-)
+@pytest.fixture(params=list(arb.file_format.FileFormat), scope="session")
 def file_format(request: pytest.FixtureRequest) -> arb.file_format.FileFormat:
     """Parametrize the file format used in the test."""
     out: arb.file_format.FileFormat = request.param

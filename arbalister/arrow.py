@@ -93,7 +93,12 @@ def get_table_reader(format: ff.FileFormat) -> ReadCallable:
 
             out = read_orc
         case ff.FileFormat.Sqlite:
-            raise NotImplementedError("Sqlite not available in Python Datafusion")
+            from . import adbc as adbc
+
+            # FIXME: For now we just pretend SqliteDataFrame is a datafision DataFrame
+            # Either we integrate it properly into Datafusion, or we create a DataFrame as a
+            # typing.protocol.
+            out = adbc.SqliteDataFrame.read_sqlite  # type: ignore[assignment]
 
     return out
 
@@ -124,5 +129,7 @@ def get_table_writer(format: ff.FileFormat) -> WriteCallable:
 
             out = pyarrow.orc.write_table
         case ff.FileFormat.Sqlite:
-            raise NotImplementedError("Sqlite not available in Python Datafusion")
+            from . import adbc as adbc
+
+            out = adbc.write_sqlite
     return out
