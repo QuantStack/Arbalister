@@ -8,6 +8,8 @@ import type * as services from "@jupyterlab/services";
 import type { Contents } from "@jupyterlab/services";
 import type { DataGrid } from "@lumino/datagrid";
 
+import { addAvroFileType, addIpcFileType, addOrcFileType, addParquetFileType } from "./filetypes";
+import { getArrowIPCIcon, getAvroIcon, getORCIcon, getParquetIcon } from "./labicons";
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
 
@@ -79,74 +81,6 @@ function ensureCsvFileType(docRegistry: DocumentRegistry): DocumentRegistry.IFil
   return docRegistry.getFileType(name)!;
 }
 
-function addAvroFileType(
-  docRegistry: DocumentRegistry,
-  options: Partial<DocumentRegistry.IFileType> = {},
-): DocumentRegistry.IFileType {
-  const name = "apache-avro";
-  docRegistry.addFileType({
-    ...options,
-    name,
-    displayName: "Avro",
-    mimeTypes: ["application/avro-binary"],
-    extensions: [".avro"],
-    contentType: "file",
-    fileFormat: "base64",
-  });
-  return docRegistry.getFileType(name)!;
-}
-
-function addParquetFileType(
-  docRegistry: DocumentRegistry,
-  options: Partial<DocumentRegistry.IFileType> = {},
-): DocumentRegistry.IFileType {
-  const name = "apache-parquet";
-  docRegistry.addFileType({
-    ...options,
-    name,
-    displayName: "Parquet",
-    mimeTypes: ["application/vnd.apache.parquet"],
-    extensions: [".parquet"],
-    contentType: "file",
-    fileFormat: "base64",
-  });
-  return docRegistry.getFileType(name)!;
-}
-
-function addIpcFileType(
-  docRegistry: DocumentRegistry,
-  options: Partial<DocumentRegistry.IFileType> = {},
-): DocumentRegistry.IFileType {
-  const name = "apache-arrow-ipc";
-  docRegistry.addFileType({
-    ...options,
-    name,
-    displayName: "Arrow IPC",
-    mimeTypes: ["application/vnd.apache.arrow.file"],
-    extensions: [".ipc", ".feather", ".arrow"],
-    contentType: "file",
-    fileFormat: "base64",
-  });
-  return docRegistry.getFileType(name)!;
-}
-
-function addOrcFileType(
-  docRegistry: DocumentRegistry,
-  options: Partial<DocumentRegistry.IFileType> = {},
-): DocumentRegistry.IFileType {
-  const name = "apache-orc";
-  docRegistry.addFileType({
-    ...options,
-    name,
-    displayName: "Arrow ORC",
-    mimeTypes: ["application/octet-stream"],
-    extensions: [".orc"],
-    contentType: "file",
-    fileFormat: "base64",
-  });
-  return docRegistry.getFileType(name)!;
-}
-
 function activateArrowGrid(
   app: JupyterFrontEnd,
   translator: ITranslator,
@@ -169,11 +103,17 @@ function activateArrowGrid(
     registry.register(NOOP_CONTENT_PROVIDER_ID, noOpContentProvider);
   }
 
+  const currentTheme = themeManager?.theme;
+  let isLight = true;
+  if (themeManager?.isLight) {
+    isLight = currentTheme ? themeManager?.isLight(currentTheme as string) : true;
+  }
+
   const csv_ft = ensureCsvFileType(app.docRegistry);
-  const prq_ft = addParquetFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const avo_ft = addAvroFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const ipc_ft = addIpcFileType(app.docRegistry, { icon: csv_ft?.icon });
-  const orc_ft = addOrcFileType(app.docRegistry, { icon: csv_ft?.icon });
+  let prq_ft = addParquetFileType(app.docRegistry, { icon: getParquetIcon(isLight) });
+  let avo_ft = addAvroFileType(app.docRegistry, { icon: getAvroIcon(isLight) });
+  let ipc_ft = addIpcFileType(app.docRegistry, { icon: getArrowIPCIcon(isLight) });
+  let orc_ft = addOrcFileType(app.docRegistry, { icon: getORCIcon(isLight) });
 
   const factory = new ArrowGridViewerFactory({
     name: factory_arrow,
@@ -223,14 +163,18 @@ function activateArrowGrid(
 
   const updateThemes = (newTheme?: string | null) => {
     const themeName = newTheme ? (newTheme as string) : themeManager?.theme;
-    const isLight = themeManager?.isLight(themeName as string) ?? true;
-    style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
-    rendererConfig = isLight ? Private.LIGHT_TEXT_CONFIG : Private.DARK_TEXT_CONFIG;
+    const isLightNew = themeManager?.isLight(themeName as string) ?? true;
+    style = isLightNew ? Private.LIGHT_STYLE : Private.DARK_STYLE;
+    rendererConfig = isLightNew ? Private.LIGHT_TEXT_CONFIG : Private.DARK_TEXT_CONFIG;
     tracker.forEach(async (widget) => {
       await widget.content.ready;
       widget.content.style = style;
       widget.content.rendererConfig = rendererConfig;
     });
+    prq_ft = addParquetFileType(app.docRegistry, { icon: getParquetIcon(isLightNew) });
+    avo_ft = addAvroFileType(app.docRegistry, { icon: getAvroIcon(isLightNew) });
+    ipc_ft = addIpcFileType(app.docRegistry, { icon: getArrowIPCIcon(isLightNew) });
+    orc_ft = addOrcFileType(app.docRegistry, { icon: getORCIcon(isLightNew) });
   };
   if (themeManager) {
     themeManager.themeChanged.connect((_, args) => {
