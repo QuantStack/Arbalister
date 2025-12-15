@@ -3,7 +3,7 @@ import json
 import pathlib
 import random
 import string
-from typing import Awaitable, Callable, Final
+from typing import Awaitable, Callable
 
 import pyarrow as pa
 import pytest
@@ -19,40 +19,30 @@ def file_format(request: pytest.FixtureRequest) -> arb.file_format.FileFormat:
     return out
 
 
-DUMMY_TABLE_1_ROW_COUNT: Final = 10
-DUMMY_TABLE_1_COL_COUNT: Final = 4
-
-
 @pytest.fixture(scope="module")
-def dummy_table_1() -> pa.Table:
+def dummy_table_1(num_rows: int = 10) -> pa.Table:
     """Generate a table with fake data."""
     data = {
-        "lower": random.choices(string.ascii_lowercase, k=DUMMY_TABLE_1_ROW_COUNT),
-        "sequence": list(range(DUMMY_TABLE_1_ROW_COUNT)),
-        "upper": random.choices(string.ascii_uppercase, k=DUMMY_TABLE_1_ROW_COUNT),
-        "number": [random.random() for _ in range(DUMMY_TABLE_1_ROW_COUNT)],
+        "lower": random.choices(string.ascii_lowercase, k=num_rows),
+        "sequence": list(range(num_rows)),
+        "upper": random.choices(string.ascii_uppercase, k=num_rows),
+        "number": [random.random() for _ in range(num_rows)],
     }
     table = pa.table(data)
-    assert len(table.schema) == DUMMY_TABLE_1_COL_COUNT
     return table
 
 
-DUMMY_TABLE_2_ROW_COUNT = 13
-DUMMY_TABLE_2_COL_COUNT = 5
-
-
 @pytest.fixture(scope="module")
-def dummy_table_2() -> pa.Table:
+def dummy_table_2(num_rows: int = 13) -> pa.Table:
     """Generate a table with different fake data."""
     data = {
-        "id": list(range(DUMMY_TABLE_2_ROW_COUNT)),
-        "flag": [random.choice([True, False]) for _ in range(DUMMY_TABLE_2_ROW_COUNT)],
-        "letter": random.choices(string.ascii_letters, k=DUMMY_TABLE_2_ROW_COUNT),
-        "score": [random.randint(0, 100) for _ in range(DUMMY_TABLE_2_ROW_COUNT)],
-        "timestamp": [random.randint(1_600_000_000, 1_700_000_000) for _ in range(DUMMY_TABLE_2_ROW_COUNT)],
+        "id": list(range(num_rows)),
+        "flag": [random.choice([True, False]) for _ in range(num_rows)],
+        "letter": random.choices(string.ascii_letters, k=num_rows),
+        "score": [random.randint(0, 100) for _ in range(num_rows)],
+        "timestamp": [random.randint(1_600_000_000, 1_700_000_000) for _ in range(num_rows)],
     }
     table = pa.table(data)
-    assert len(table.schema) == DUMMY_TABLE_2_COL_COUNT
     return table
 
 
