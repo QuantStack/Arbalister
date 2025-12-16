@@ -1,6 +1,8 @@
 import { tableFromIPC } from "apache-arrow";
 import type * as Arrow from "apache-arrow";
 
+import type { FileOptions } from "./file_options";
+
 export interface StatsOptions {
   path: string;
 }
@@ -24,8 +26,16 @@ export interface TableOptions {
   col_chunk?: number;
 }
 
-export async function fetchTable(params: Readonly<TableOptions>): Promise<Arrow.Table> {
-  const queryKeys = ["row_chunk_size", "row_chunk", "col_chunk_size", "col_chunk"] as const;
+export async function fetchTable(
+  params: Readonly<TableOptions> & FileOptions,
+): Promise<Arrow.Table> {
+  const queryKeys = [
+    "row_chunk_size",
+    "row_chunk",
+    "col_chunk_size",
+    "col_chunk",
+    "table_name",
+  ] as const;
 
   const query: string[] = [];
   for (const key of queryKeys) {

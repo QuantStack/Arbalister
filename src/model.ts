@@ -4,6 +4,7 @@ import type * as Arrow from "apache-arrow";
 
 import { PairMap } from "./collection";
 import { fetchStats, fetchTable } from "./requests";
+import type { FileOptions } from "./file_options";
 
 export namespace ArrowModel {
   export interface LoadingParams {
@@ -17,7 +18,7 @@ export namespace ArrowModel {
 }
 
 export class ArrowModel extends DataModel {
-  constructor(loadingOptions: ArrowModel.LoadingOptions) {
+  constructor(loadingOptions: ArrowModel.LoadingOptions, fileOptions: FileOptions) {
     super();
 
     this._loadingParams = {
@@ -26,6 +27,7 @@ export class ArrowModel extends DataModel {
       loadingRepr: "",
       ...loadingOptions,
     };
+    this._fileOptions = fileOptions;
 
     this._ready = this.initialize();
   }
@@ -33,7 +35,7 @@ export class ArrowModel extends DataModel {
   protected async initialize(): Promise<void> {
     const [schema, stats, chunk00] = await Promise.all([
       this.fetchSchema(),
-      fetchStats({ path: this._loadingParams.path }),
+      fetchStats({ path: this._loadingParams.path, ...this._fileOptions }),
       this.fetchChunk([0, 0]),
     ]);
 
@@ -125,6 +127,7 @@ export class ArrowModel extends DataModel {
       row_chunk: row_chunk,
       col_chunk_size: this._loadingParams.colChunkSize,
       col_chunk: col_chunk,
+      ...this._fileOptions,
     });
   }
 
@@ -156,6 +159,7 @@ export class ArrowModel extends DataModel {
       path: this._loadingParams.path,
       row_chunk_size: 0,
       row_chunk: 0,
+      ...this._fileOptions,
     });
     return table.schema;
   }
@@ -176,6 +180,7 @@ export class ArrowModel extends DataModel {
   }
 
   private _loadingParams: ArrowModel.LoadingParams;
+  private _fileOptions: FileOptions;
 
   private _numRows: number = 0;
   private _numCols: number = 0;
