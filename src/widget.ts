@@ -72,7 +72,7 @@ export class ArrowGridViewer extends Panel {
     try {
       await this._updateGrid();
       this._revealed.resolve(undefined);
-    } catch (error: any) {
+    } catch (error) {
       await handleError(error, "Failed to initialized ArrowGridViewer");
     }
   }

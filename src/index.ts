@@ -159,9 +159,8 @@ function activateArrowGrid(
       widget.content.style = style;
       widget.content.rendererConfig = rendererConfig;
       updateThemes();
-
       console.log("JupyterLab extension arbalister is activated!");
-    } catch (error: any) {
+    } catch (error) {
       await handleError(error, "ArrowGridViewer widget initialization failed");
     }
   });
@@ -186,7 +185,7 @@ function activateArrowGrid(
       try {
         const newTheme = args.newValue;
         updateThemes(newTheme);
-      } catch (error: any) {
+      } catch (error) {
         void handleError(error, "Failed to the viewer according to updated theme");
       }
     });

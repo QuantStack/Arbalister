@@ -39,7 +39,7 @@ export class ArrowModel extends DataModel {
       this._chunks.set([0, 0], chunk00);
       this._numCols = stats.num_cols;
       this._numRows = stats.num_rows;
-    } catch (error: any) {
+    } catch (error) {
       await handleError(error, "Initial data could not be loaded");
     }
   }
@@ -114,7 +114,7 @@ export class ArrowModel extends DataModel {
         this._chunks.set(chunk_idx, table);
         this.emitChangedChunk(chunk_idx);
       })
-      .catch((error: any) => {
+      .catch((error) => {
         this._chunks.delete(chunk_idx);
         void handleError(error, "Chunck load failed");
       });
@@ -155,7 +155,7 @@ export class ArrowModel extends DataModel {
       .then((table) => {
         this._chunks.set(chunk_idx, table);
       })
-      .catch((error: any) => {
+      .catch((error) => {
         this._chunks.delete(chunk_idx);
         void handleError(error, "Prefetch failed");
       });
