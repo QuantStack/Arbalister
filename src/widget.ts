@@ -1,4 +1,4 @@
-import { showErrorMessage } from "@jupyterlab/apputils";
+import { Dialog, showDialog } from "@jupyterlab/apputils";
 import { ABCWidgetFactory, DocumentWidget } from "@jupyterlab/docregistry";
 import { PromiseDelegate } from "@lumino/coreutils";
 import { BasicKeyHandler, BasicMouseHandler, DataGrid, TextRenderer } from "@lumino/datagrid";
@@ -69,11 +69,27 @@ export class ArrowGridViewer extends Panel {
 
   protected async initialize(): Promise<void> {
     this._defaultStyle = DataGrid.defaultStyle;
+
     try {
       await this._updateGrid();
       this._revealed.resolve(undefined);
+      throw new Error("test");
     } catch (error) {
-      await showErrorMessage("Failed to initialized ArrowGridViewer", error as Error);
+      const trans = Dialog.translator.load("jupyterlab");
+      const buttons = [
+        Dialog.cancelButton({ label: trans.__("Close") }),
+        Dialog.okButton({ label: trans.__("Retry") }),
+      ];
+      const confirm = await showDialog({
+        title: "Failed to initialized ArrowGridViewer",
+        body: typeof error === "string" ? error : (error as Error).message,
+        buttons,
+      });
+      const shouldRetry = confirm.button.accept;
+
+      if (shouldRetry) {
+        await this.initialize();
+      }
     }
   }
 
