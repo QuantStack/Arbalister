@@ -12,6 +12,7 @@ import { addAvroFileType, addIpcFileType, addOrcFileType, addParquetFileType } f
 import { getArrowIPCIcon, getAvroIcon, getORCIcon, getParquetIcon } from "./labicons";
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
+import { handleError } from "./errors";
 
 export namespace NoOpContentProvider {
   export interface IOptions {
@@ -141,24 +142,28 @@ function activateArrowGrid(
   app.docRegistry.addWidgetFactory(factory);
 
   factory.widgetCreated.connect(async (_sender, widget) => {
-    // Track the widget.
-    void tracker.add(widget);
-    // Notify the widget tracker if restore data needs to update.
-    widget.context.pathChanged.connect(() => {
-      void tracker.save(widget);
-    });
+    try {
+      // Track the widget.
+      void tracker.add(widget);
+      // Notify the widget tracker if restore data needs to update.
+      widget.context.pathChanged.connect(() => {
+        void tracker.save(widget);
+      });
 
-    if (csv_ft) {
-      widget.title.icon = csv_ft.icon;
-      widget.title.iconClass = csv_ft.iconClass!;
-      widget.title.iconLabel = csv_ft.iconLabel!;
+      if (csv_ft) {
+        widget.title.icon = csv_ft.icon;
+        widget.title.iconClass = csv_ft.iconClass!;
+        widget.title.iconLabel = csv_ft.iconLabel!;
+      }
+      await widget.content.ready;
+      widget.content.style = style;
+      widget.content.rendererConfig = rendererConfig;
+      updateThemes();
+
+      console.log("JupyterLab extension arbalister is activated!");
+    } catch (error: any) {
+      await handleError(error, "ArrowGridViewer widget initialization failed");
     }
-    await widget.content.ready;
-    widget.content.style = style;
-    widget.content.rendererConfig = rendererConfig;
-    updateThemes();
-
-    console.log("JupyterLab extension arbalister is activated!");
   });
 
   const updateThemes = (newTheme?: string | null) => {
@@ -178,8 +183,12 @@ function activateArrowGrid(
   };
   if (themeManager) {
     themeManager.themeChanged.connect((_, args) => {
-      const newTheme = args.newValue;
-      updateThemes(newTheme);
+      try {
+        const newTheme = args.newValue;
+        updateThemes(newTheme);
+      } catch (error: any) {
+        void handleError(error, "Failed to the viewer according to updated theme");
+      }
     });
   }
 }

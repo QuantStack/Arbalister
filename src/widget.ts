@@ -6,6 +6,7 @@ import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry"
 import type * as DataGridModule from "@lumino/datagrid";
 
 import { ArrowModel } from "./model";
+import { handleError } from "./errors";
 
 export namespace ArrowGridViewer {
   export interface IOptions {
@@ -68,8 +69,12 @@ export class ArrowGridViewer extends Panel {
 
   protected async initialize(): Promise<void> {
     this._defaultStyle = DataGrid.defaultStyle;
-    await this._updateGrid();
-    this._revealed.resolve(undefined);
+    try {
+      await this._updateGrid();
+      this._revealed.resolve(undefined);
+    } catch (error: any) {
+      await handleError(error, "Failed to initialized ArrowGridViewer");
+    }
   }
 
   private async _updateGrid() {
