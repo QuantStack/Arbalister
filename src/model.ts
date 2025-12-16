@@ -6,22 +6,26 @@ import { PairMap } from "./collection";
 import { fetchStats, fetchTable } from "./requests";
 
 export namespace ArrowModel {
-  export interface IOptions {
+  export interface LoadingParams {
     path: string;
-    rowChunkSize?: number;
-    colChunkSize?: number;
-    loadingRepr?: string;
+    rowChunkSize: number;
+    colChunkSize: number;
+    loadingRepr: string;
   }
+
+  export type LoadingOptions = Partial<LoadingParams> & Pick<LoadingParams, "path">;
 }
 
 export class ArrowModel extends DataModel {
-  constructor(options: ArrowModel.IOptions) {
+  constructor(loadingOptions: ArrowModel.LoadingOptions) {
     super();
 
-    this._path = options.path;
-    this._rowChunkSize = options.rowChunkSize ?? 512;
-    this._colChunkSize = options.colChunkSize ?? 24;
-    this._loadingRepr = options.loadingRepr ?? "";
+    this._loadingParams = {
+      rowChunkSize: 512,
+      colChunkSize: 24,
+      loadingRepr: "",
+      ...loadingOptions,
+    };
 
     this._ready = this.initialize();
   }
@@ -29,7 +33,7 @@ export class ArrowModel extends DataModel {
   protected async initialize(): Promise<void> {
     const [schema, stats, chunk00] = await Promise.all([
       this.fetchSchema(),
-      fetchStats({ path: this._path }),
+      fetchStats({ path: this._loadingParams.path }),
       this.fetchChunk([0, 0]),
     ]);
 
@@ -83,12 +87,12 @@ export class ArrowModel extends DataModel {
       const chunk = this._chunks.get(chunk_idx)!;
       if (chunk instanceof Promise) {
         // Wait for Promise to complete and mark data as modified
-        return this._loadingRepr;
+        return this._loadingParams.loadingRepr;
       }
 
       // We have data
-      const row_idx_in_chunk = row % this._rowChunkSize;
-      const col_idx_in_chunk = col % this._colChunkSize;
+      const row_idx_in_chunk = row % this._loadingParams.rowChunkSize;
+      const col_idx_in_chunk = col % this._loadingParams.colChunkSize;
       const out = chunk.getChildAt(col_idx_in_chunk)?.get(row_idx_in_chunk).toString();
 
       // Prefetch next chunks only once we have data for the current chunk.
@@ -110,16 +114,16 @@ export class ArrowModel extends DataModel {
     });
     this._chunks.set(chunk_idx, promise);
 
-    return this._loadingRepr;
+    return this._loadingParams.loadingRepr;
   }
 
   private async fetchChunk(chunk_idx: [number, number]) {
     const [row_chunk, col_chunk] = chunk_idx;
     return await fetchTable({
-      path: this._path,
-      row_chunk_size: this._rowChunkSize,
+      path: this._loadingParams.path,
+      row_chunk_size: this._loadingParams.rowChunkSize,
       row_chunk: row_chunk,
-      col_chunk_size: this._colChunkSize,
+      col_chunk_size: this._loadingParams.colChunkSize,
       col_chunk: col_chunk,
     });
   }
@@ -129,10 +133,10 @@ export class ArrowModel extends DataModel {
     this.emitChanged({
       type: "cells-changed",
       region: "body",
-      row: row_chunk * this._rowChunkSize,
-      rowSpan: this._rowChunkSize,
-      column: col_chunk * this._colChunkSize,
-      columnSpan: this._colChunkSize,
+      row: row_chunk * this._loadingParams.rowChunkSize,
+      rowSpan: this._loadingParams.rowChunkSize,
+      column: col_chunk * this._loadingParams.colChunkSize,
+      columnSpan: this._loadingParams.colChunkSize,
     });
   }
 
@@ -149,7 +153,7 @@ export class ArrowModel extends DataModel {
 
   private async fetchSchema() {
     const table = await fetchTable({
-      path: this._path,
+      path: this._loadingParams.path,
       row_chunk_size: 0,
       row_chunk: 0,
     });
@@ -157,7 +161,10 @@ export class ArrowModel extends DataModel {
   }
 
   private chunkIdx(row: number, col: number): [number, number] {
-    return [Math.floor(row / this._rowChunkSize), Math.floor(col / this._colChunkSize)];
+    return [
+      Math.floor(row / this._loadingParams.rowChunkSize),
+      Math.floor(col / this._loadingParams.colChunkSize),
+    ];
   }
 
   private chunkIsValid(chunk_idx: [number, number]): boolean {
@@ -168,10 +175,7 @@ export class ArrowModel extends DataModel {
     );
   }
 
-  private _path: string;
-  private _rowChunkSize: number;
-  private _colChunkSize: number;
-  private _loadingRepr: string;
+  private _loadingParams: ArrowModel.LoadingParams;
 
   private _numRows: number = 0;
   private _numCols: number = 0;
