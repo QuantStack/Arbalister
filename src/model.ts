@@ -7,14 +7,12 @@ import { fetchStats, fetchTable } from "./requests";
 import type { FileOptions } from "./file_options";
 
 export namespace ArrowModel {
-  export interface LoadingParams {
+  export interface LoadingOptions {
     path: string;
-    rowChunkSize: number;
-    colChunkSize: number;
-    loadingRepr: string;
+    rowChunkSize?: number;
+    colChunkSize?: number;
+    loadingRepr?: string;
   }
-
-  export type LoadingOptions = Partial<LoadingParams> & Pick<LoadingParams, "path">;
 }
 
 export class ArrowModel extends DataModel {
@@ -179,8 +177,8 @@ export class ArrowModel extends DataModel {
     );
   }
 
-  private _loadingParams: ArrowModel.LoadingParams;
-  private _fileOptions: FileOptions;
+  private readonly _loadingParams: Required<ArrowModel.LoadingOptions>;
+  private readonly _fileOptions: FileOptions;
 
   private _numRows: number = 0;
   private _numCols: number = 0;
