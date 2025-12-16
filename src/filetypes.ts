@@ -67,3 +67,20 @@ export function addOrcFileType(
   });
   return docRegistry.getFileType(name)!;
 }
+
+export function addSqliteFileType(
+  docRegistry: DocumentRegistry,
+  options: Partial<DocumentRegistry.IFileType> = {},
+): DocumentRegistry.IFileType {
+  const name = "sqlite";
+  docRegistry.addFileType({
+    ...options,
+    name,
+    displayName: "SQLite",
+    mimeTypes: ["application/vnd.sqlite3"],
+    extensions: [".sqlite", ".sqlite3", ".db", ".db3", ".s3db", ".sl3"],
+    contentType: "file",
+    fileFormat: "base64",
+  });
+  return docRegistry.getFileType(name)!;
+}
