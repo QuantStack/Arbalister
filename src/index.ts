@@ -15,7 +15,13 @@ import {
   addParquetFileType,
   addSqliteFileType,
 } from "./filetypes";
-import { getArrowIPCIcon, getAvroIcon, getORCIcon, getParquetIcon } from "./labicons";
+import {
+  getArrowIPCIcon,
+  getAvroIcon,
+  getORCIcon,
+  getParquetIcon,
+  getSqliteIcon,
+} from "./labicons";
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
 
@@ -120,7 +126,7 @@ function activateArrowGrid(
   let avo_ft = addAvroFileType(app.docRegistry, { icon: getAvroIcon(isLight) });
   let ipc_ft = addIpcFileType(app.docRegistry, { icon: getArrowIPCIcon(isLight) });
   let orc_ft = addOrcFileType(app.docRegistry, { icon: getORCIcon(isLight) });
-  let sqlite_ft = addSqliteFileType(app.docRegistry);
+  let sqlite_ft = addSqliteFileType(app.docRegistry, { icon: getSqliteIcon(isLight) });
 
   const factory = new ArrowGridViewerFactory({
     name: factory_arrow,
@@ -182,7 +188,7 @@ function activateArrowGrid(
     avo_ft = addAvroFileType(app.docRegistry, { icon: getAvroIcon(isLightNew) });
     ipc_ft = addIpcFileType(app.docRegistry, { icon: getArrowIPCIcon(isLightNew) });
     orc_ft = addOrcFileType(app.docRegistry, { icon: getORCIcon(isLightNew) });
-    sqlite_ft = addSqliteFileType(app.docRegistry);
+    sqlite_ft = addSqliteFileType(app.docRegistry, { icon: getSqliteIcon(isLightNew) });
   };
   if (themeManager) {
     themeManager.themeChanged.connect((_, args) => {

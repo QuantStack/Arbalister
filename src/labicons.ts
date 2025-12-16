@@ -7,6 +7,8 @@ import orcLightSvg from "../style/icons/orc.svg";
 import orcDarkSvg from "../style/icons/orc_dark.svg";
 import parquetSvgLight from "../style/icons/parquet.svg";
 import parquetSvgDark from "../style/icons/parquet_dark.svg";
+import sqliteSvgLight from "../style/icons/sqlite.svg";
+import sqliteSvgDark from "../style/icons/sqlite_dark.svg";
 
 export const getLabIcon = (labIconName: string, iconSvg: string) => {
   return new LabIcon({
@@ -27,4 +29,7 @@ export const getORCIcon = (isLight: boolean) => {
 };
 export const getAvroIcon = (isLight: boolean) => {
   return getLabIcon("avro", isLight ? avroSvg : avroSvg);
+};
+export const getSqliteIcon = (isLight: boolean) => {
+  return getLabIcon("sqlite", isLight ? sqliteSvgLight : sqliteSvgDark);
 };
