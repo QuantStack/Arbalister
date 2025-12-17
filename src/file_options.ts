@@ -2,4 +2,8 @@ export interface SqliteOptions {
   table_name?: string;
 }
 
-export type FileOptions = SqliteOptions;
+export interface CsvOptions {
+  delimiter?: string;
+}
+
+export type FileOptions = SqliteOptions | CsvOptions;

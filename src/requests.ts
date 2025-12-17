@@ -26,6 +26,13 @@ export interface TableOptions {
   col_chunk?: number;
 }
 
+/**
+ * Transform a union into a union where every member is optionally present.
+ */
+type OptionalizeUnion<T> = {
+  [K in T extends unknown ? keyof T : never]?: T extends Record<K, infer V> ? V : never;
+};
+
 export async function fetchTable(
   params: Readonly<TableOptions> & FileOptions,
 ): Promise<Arrow.Table> {
@@ -35,17 +42,18 @@ export async function fetchTable(
     "col_chunk_size",
     "col_chunk",
     "table_name",
+    "delimiter",
   ] as const;
 
-  const query: string[] = [];
+  const query = new URLSearchParams();
+
   for (const key of queryKeys) {
-    const value = params[key];
-    if (value !== undefined) {
-      query.push(`${key}=${encodeURIComponent(value)}`);
+    const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileOptions>)[key];
+    if (value !== undefined && value != null) {
+      query.set(key, value.toString());
     }
   }
 
-  const queryString = query.length ? `?${query.join("&")}` : "";
-  const url = `/arrow/stream/${params.path}${queryString}`;
+  const url = `/arrow/stream/${params.path}?${query.toString()}`;
   return await tableFromIPC(fetch(url));
 }
