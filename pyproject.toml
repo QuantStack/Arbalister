@@ -187,6 +187,10 @@ description = "Check Python typing with MyPy."
 cmd = "biome check --write --error-on-warnings"
 description = "Check JS/TS/CSS code with biome."
 
+[tool.pixi.feature.test.tasks.check-typescript]
+cmd = "npx --no tsc --noEmit"
+description = "Check TS code with typescript."
+
 [tool.pixi.feature.test.tasks.check-typos]
 cmd = "typos --write-changes"
 description = "Check for English typos with typos."
@@ -196,6 +200,7 @@ depends-on = [
   { task = "check-ruff" },
   { task = "check-mypy" },
   { task = "check-biome" },
+  { task = "check-typescript" },
   { task = "check-typos" },
 ]
 description = "Run all code checks."

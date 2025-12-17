@@ -51,6 +51,13 @@ repos:
         entry: pixi run check-biome
         language: system
         types_or: [javascript, jsx, ts, tsx, json]
+      - id: pixi-typescript
+        name: Run typescript checks through pixi
+        entry: pixi run check-typescript
+        language: system
+        types_or: [ts, tsx]
+        pass_filenames: false
+        require_serial: true
       - id: pixi-ruff
         name: Run ruff check through pixi
         entry: pixi run check-ruff
