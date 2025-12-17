@@ -180,12 +180,15 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
 
   protected createNewWidget(context: DocumentRegistry.Context): IDocumentWidget<ArrowGridViewer> {
     const translator = this.translator;
+    const ft = this.fileType(context.path);
 
-    const options: ArrowGridDocumentWidget.IOptions = { context, translator };
-    if (this.isType(context.path, FileType.Csv)) {
-      return new ArrowGridDocumentWidget(options, DEFAULT_CSV_OPTIONS);
+    let fileOption: FileOptions = {};
+    if (ft?.name === FileType.Csv) {
+      fileOption = DEFAULT_CSV_OPTIONS;
     }
-    return new ArrowGridDocumentWidget(options, {});
+    const widget = new ArrowGridDocumentWidget({ context, translator }, fileOption);
+    this.updateIcon(widget);
+    return widget;
   }
 
   /**
@@ -194,7 +197,8 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
   protected defaultToolbarFactory(
     widget: IDocumentWidget<ArrowGridViewer>,
   ): DocumentRegistry.IToolbarItem[] {
-    if (this.isType(widget.context.path, FileType.Csv)) {
+    const ft = this.fileType(widget.context.path);
+    if (ft?.name === FileType.Csv) {
       return [
         {
           name: "arbalister:csv-toolbar",
@@ -211,9 +215,27 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
     return [];
   }
 
-  private isType(path: string, type: string): boolean {
-    const contentTypes = new Set(this._docRegistry.getFileTypesForPath(path).map((ft) => ft.name));
-    return contentTypes.has(type);
+  updateIcon(widget: IDocumentWidget<ArrowGridViewer>) {
+    const ft = this.fileType(widget.context.path);
+    if (ft !== undefined) {
+      widget.title.icon = ft.icon;
+      if (ft.iconClass) {
+        widget.title.iconClass = ft.iconClass;
+      }
+      if (ft.iconLabel) {
+        widget.title.iconLabel = ft.iconLabel;
+      }
+    }
+  }
+
+  private fileType(path: string): DocumentRegistry.IFileType | undefined {
+    const fileTypes = this._docRegistry
+      .getFileTypesForPath(path)
+      .filter((ft) => Object.values(FileType).includes(ft.name));
+    if (fileTypes.length === 1) {
+      return fileTypes[0];
+    }
+    return undefined;
   }
 
   private _docRegistry: DocumentRegistry;

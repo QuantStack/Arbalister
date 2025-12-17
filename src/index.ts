@@ -150,11 +150,6 @@ function activateArrowGrid(
         void tracker.save(widget);
       });
 
-      if (csv_ft) {
-        widget.title.icon = csv_ft.icon;
-        widget.title.iconClass = csv_ft.iconClass!;
-        widget.title.iconLabel = csv_ft.iconLabel!;
-      }
       await widget.content.ready;
       widget.content.style = style;
       widget.content.rendererConfig = rendererConfig;

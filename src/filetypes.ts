@@ -1,12 +1,12 @@
 import type { DocumentRegistry } from "@jupyterlab/docregistry";
 
-export namespace FileType {
-  export const Avro: string = "apache-avro";
-  export const Csv: string = "csv";
-  export const Ipc: string = "apache-arrow-ipc-avro";
-  export const Orc: string = "apache-orc";
-  export const Parquet: string = "apache-parquet";
-  export const Sqlite: string = "sqlite";
+export enum FileType {
+  Avro = "apache-avro",
+  Csv = "csv",
+  Ipc = "apache-arrow-ipc-avro",
+  Orc = "apache-orc",
+  Parquet = "apache-parquet",
+  Sqlite = "sqlite",
 }
 
 export function ensureCsvFileType(docRegistry: DocumentRegistry): DocumentRegistry.IFileType {
