@@ -18,11 +18,9 @@ export namespace CsvToolbar {
 }
 
 export class CsvToolbar extends Widget {
-  constructor(options: CsvToolbar.Options) {
+  constructor(options: CsvToolbar.Options, fileOptions: Required<CsvOptions>) {
     super({
-      // TODO this is the same value as the default in the backend but it is not send on the first model.
-      // It should be created from a set of default options.
-      node: Private.createDelimiterNode(",", options.translator),
+      node: Private.createDelimiterNode(fileOptions.delimiter, options.translator),
     });
     this._gridViewer = options.gridViewer;
     this.addClass("arrow-viewer-toolbar");

@@ -6,6 +6,7 @@ import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
 
+import { DEFAULT_CSV_OPTIONS } from "./file_options";
 import { FileType } from "./filetypes";
 import { ArrowModel } from "./model";
 import { CsvToolbar } from "./toolbar";
@@ -18,9 +19,10 @@ export namespace ArrowGridViewer {
 }
 
 export class ArrowGridViewer extends Panel {
-  constructor(options: ArrowGridViewer.Options) {
+  constructor(options: ArrowGridViewer.Options, fileOptions: FileOptions) {
     super();
     this._options = options;
+    this._fileOptions = fileOptions;
 
     this.addClass("arrow-viewer");
 
@@ -136,7 +138,7 @@ export class ArrowGridViewer extends Panel {
   }
 
   private _options: ArrowGridViewer.Options;
-  private _fileOptions: FileOptions = {};
+  private _fileOptions: FileOptions;
   private _grid: DataGridModule.DataGrid;
   private _revealed = new PromiseDelegate<void>();
   private _ready: Promise<void>;
@@ -151,9 +153,9 @@ export namespace ArrowGridDocumentWidget {
 }
 
 export class ArrowGridDocumentWidget extends DocumentWidget<ArrowGridViewer> {
-  constructor(options: ArrowGridDocumentWidget.IOptions) {
+  constructor(options: ArrowGridDocumentWidget.IOptions, fileOptions: FileOptions) {
     let { content, context, reveal, ...other } = options;
-    content = content || ArrowGridDocumentWidget._createContent(context);
+    content = content || ArrowGridDocumentWidget._createContent(context, fileOptions);
     reveal = Promise.all([reveal, content.revealed, context.ready]);
     super({ content, context, reveal, ...other });
     this.addClass("arrow-viewer-base");
@@ -161,8 +163,9 @@ export class ArrowGridDocumentWidget extends DocumentWidget<ArrowGridViewer> {
 
   private static _createContent(
     context: DocumentRegistry.IContext<DocumentRegistry.IModel>,
+    fileOptions: FileOptions,
   ): ArrowGridViewer {
-    return new ArrowGridViewer({ path: context.path });
+    return new ArrowGridViewer({ path: context.path }, fileOptions);
   }
 }
 
@@ -177,7 +180,12 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
 
   protected createNewWidget(context: DocumentRegistry.Context): IDocumentWidget<ArrowGridViewer> {
     const translator = this.translator;
-    return new ArrowGridDocumentWidget({ context, translator });
+
+    const options: ArrowGridDocumentWidget.IOptions = { context, translator };
+    if (this.isType(context.path, FileType.Csv)) {
+      return new ArrowGridDocumentWidget(options, DEFAULT_CSV_OPTIONS);
+    }
+    return new ArrowGridDocumentWidget(options, {});
   }
 
   /**
@@ -186,21 +194,26 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
   protected defaultToolbarFactory(
     widget: IDocumentWidget<ArrowGridViewer>,
   ): DocumentRegistry.IToolbarItem[] {
-    const contentTypes = new Set(
-      this._docRegistry.getFileTypesForPath(widget.context.path).map((ft) => ft.name),
-    );
-    if (contentTypes.has(FileType.Csv)) {
+    if (this.isType(widget.context.path, FileType.Csv)) {
       return [
         {
           name: "arbalister:csv-toolbar",
-          widget: new CsvToolbar({
-            gridViewer: widget.content,
-            translator: this.translator,
-          }),
+          widget: new CsvToolbar(
+            {
+              gridViewer: widget.content,
+              translator: this.translator,
+            },
+            DEFAULT_CSV_OPTIONS,
+          ),
         },
       ];
     }
     return [];
+  }
+
+  private isType(path: string, type: string): boolean {
+    const contentTypes = new Set(this._docRegistry.getFileTypesForPath(path).map((ft) => ft.name));
+    return contentTypes.has(type);
   }
 
   private _docRegistry: DocumentRegistry;
