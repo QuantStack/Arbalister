@@ -15,14 +15,14 @@ const MOCK_TABLE = tableFromArrays({
   score: [85, 90, 78, 92, 88, 76, 95, 81, 89, 93],
 });
 
-async function fetchStatsMocked(_params: Req.StatsParams): Promise<Req.StatsResponse> {
+async function fetchStatsMocked(_params: Req.StatsOptions): Promise<Req.StatsResponse> {
   return {
     num_rows: MOCK_TABLE.numRows,
     num_cols: MOCK_TABLE.numCols,
   };
 }
 
-async function fetchTableMocked(params: Req.TableParams): Promise<Arrow.Table> {
+async function fetchTableMocked(params: Req.TableOptions): Promise<Arrow.Table> {
   let table: Arrow.Table = MOCK_TABLE;
 
   if (params.row_chunk !== undefined && params.row_chunk_size !== undefined) {
@@ -51,7 +51,7 @@ describe("ArrowModel", () => {
   (fetchTable as jest.Mock).mockImplementation(fetchTableMocked);
   (fetchStats as jest.Mock).mockImplementation(fetchStatsMocked);
 
-  const model = new ArrowModel({ path: "test/path.parquet" });
+  const model = new ArrowModel({ path: "test/path.parquet" }, {});
 
   it("should initialize data", async () => {
     await model.ready;
