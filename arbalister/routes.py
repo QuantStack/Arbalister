@@ -82,6 +82,7 @@ class IpcParams:
     row_chunk: int | None = None
     col_chunk_size: int | None = None
     col_chunk: int | None = None
+    delimiter: str | None = None
 
 
 class IpcRouteHandler(BaseRouteHandler):

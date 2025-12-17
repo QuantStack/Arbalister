@@ -38,7 +38,9 @@ export async function fetchTable(params: TableParams): Promise<Arrow.Table> {
   if (params.col_chunk !== undefined) {
     query.push(`col_chunk=${encodeURIComponent(params.col_chunk)}`);
   }
+  //query.push(`delimeter=${encodeURIComponent('!')}`)
   const queryString = query.length ? `?${query.join("&")}` : "";
   const url = `/arrow/stream/${params.path}${queryString}`;
+
   return await tableFromIPC(fetch(url));
 }

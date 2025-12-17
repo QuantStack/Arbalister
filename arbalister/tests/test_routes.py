@@ -22,6 +22,7 @@ import arbalister.file_format as ff
         (ff.FileFormat.Parquet, arb.routes.NoReadParams()),
         (ff.FileFormat.Sqlite, arb.routes.NoReadParams()),
         (ff.FileFormat.Sqlite, arb.routes.SqliteReadParams(table_name="dummy_table_2")),
+        (ff.FileFormat.Sqlite, arb.routes.CSVReadParams(delimiter="!")),
     ],
     ids=lambda f_p: f"{f_p[0].value}-{dataclasses.asdict(f_p[1])}",
     scope="module",
