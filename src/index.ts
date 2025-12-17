@@ -3,7 +3,7 @@ import { IThemeManager, showErrorMessage, WidgetTracker } from "@jupyterlab/appu
 import { IDefaultDrive } from "@jupyterlab/services";
 import { ITranslator } from "@jupyterlab/translation";
 import type { JupyterFrontEnd, JupyterFrontEndPlugin } from "@jupyterlab/application";
-import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
+import type { IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as services from "@jupyterlab/services";
 import type { Contents } from "@jupyterlab/services";
 import type { DataGrid } from "@lumino/datagrid";
@@ -14,6 +14,7 @@ import {
   addOrcFileType,
   addParquetFileType,
   addSqliteFileType,
+  ensureCsvFileType,
 } from "./filetypes";
 import {
   getArrowIPCIcon,
@@ -76,22 +77,6 @@ const arrowGrid: JupyterFrontEndPlugin<void> = {
   optional: [ILayoutRestorer, IThemeManager],
   autoStart: true,
 };
-
-function ensureCsvFileType(docRegistry: DocumentRegistry): DocumentRegistry.IFileType {
-  const name = "csv";
-  const ft = docRegistry.getFileType(name)!;
-  if (ft) {
-    return ft;
-  }
-  docRegistry.addFileType({
-    name,
-    displayName: "CSV",
-    mimeTypes: ["text/csv"],
-    extensions: [".csv"],
-    contentType: "file",
-  });
-  return docRegistry.getFileType(name)!;
-}
 
 function activateArrowGrid(
   app: JupyterFrontEnd,

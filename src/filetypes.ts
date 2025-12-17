@@ -3,11 +3,29 @@ import type { Contents } from "@jupyterlab/services";
 
 export type ContentType = Contents.ContentType;
 
-export const CONTENT_TYPE_AVRO: ContentType = "apache-avro";
-export const CONTENT_TYPE_PARQUET: ContentType = "apache-parquet";
-export const CONTENT_TYPE_IPC: ContentType = "apache-arrow-ipc-avro";
-export const CONTENT_TYPE_ORC: ContentType = "apache-orc";
-export const CONTENT_TYPE_SQLITE: ContentType = "sqlite";
+export namespace ContentType {
+  export const Avro: ContentType = "apache-avro";
+  export const Csv: ContentType = "csv";
+  export const Ipc: ContentType = "apache-arrow-ipc-avro";
+  export const Orc: ContentType = "apache-orc";
+  export const Parquet: ContentType = "apache-parquet";
+  export const Sqlite: ContentType = "sqlite";
+}
+
+export function ensureCsvFileType(docRegistry: DocumentRegistry): DocumentRegistry.IFileType {
+  const ft = docRegistry.getFileType(ContentType.Csv);
+  if (ft) {
+    return ft;
+  }
+  docRegistry.addFileType({
+    name: ContentType.Csv,
+    displayName: "CSV",
+    mimeTypes: ["text/csv"],
+    extensions: [".csv"],
+    contentType: "file",
+  });
+  return docRegistry.getFileType(ContentType.Csv)!;
+}
 
 export function addAvroFileType(
   docRegistry: DocumentRegistry,
@@ -15,14 +33,14 @@ export function addAvroFileType(
 ): DocumentRegistry.IFileType {
   docRegistry.addFileType({
     ...options,
-    name: CONTENT_TYPE_AVRO,
+    name: ContentType.Avro,
     displayName: "Avro",
     mimeTypes: ["application/avro-binary"],
     extensions: [".avro"],
     contentType: "file",
     fileFormat: "base64",
   });
-  return docRegistry.getFileType(CONTENT_TYPE_AVRO)!;
+  return docRegistry.getFileType(ContentType.Avro)!;
 }
 
 export function addParquetFileType(
@@ -31,14 +49,14 @@ export function addParquetFileType(
 ): DocumentRegistry.IFileType {
   docRegistry.addFileType({
     ...options,
-    name: CONTENT_TYPE_PARQUET,
+    name: ContentType.Parquet,
     displayName: "Parquet",
     mimeTypes: ["application/vnd.apache.parquet"],
     extensions: [".parquet"],
     contentType: "file",
     fileFormat: "base64",
   });
-  return docRegistry.getFileType(CONTENT_TYPE_PARQUET)!;
+  return docRegistry.getFileType(ContentType.Parquet)!;
 }
 
 export function addIpcFileType(
@@ -47,14 +65,14 @@ export function addIpcFileType(
 ): DocumentRegistry.IFileType {
   docRegistry.addFileType({
     ...options,
-    name: CONTENT_TYPE_IPC,
+    name: ContentType.Ipc,
     displayName: "Arrow IPC",
     mimeTypes: ["application/vnd.apache.arrow.file"],
     extensions: [".ipc", ".feather", ".arrow"],
     contentType: "file",
     fileFormat: "base64",
   });
-  return docRegistry.getFileType(CONTENT_TYPE_IPC)!;
+  return docRegistry.getFileType(ContentType.Ipc)!;
 }
 
 export function addOrcFileType(
@@ -63,14 +81,14 @@ export function addOrcFileType(
 ): DocumentRegistry.IFileType {
   docRegistry.addFileType({
     ...options,
-    name: CONTENT_TYPE_ORC,
+    name: ContentType.Orc,
     displayName: "Arrow ORC",
     mimeTypes: ["application/octet-stream"],
     extensions: [".orc"],
     contentType: "file",
     fileFormat: "base64",
   });
-  return docRegistry.getFileType(CONTENT_TYPE_ORC)!;
+  return docRegistry.getFileType(ContentType.Orc)!;
 }
 
 export function addSqliteFileType(
@@ -79,12 +97,12 @@ export function addSqliteFileType(
 ): DocumentRegistry.IFileType {
   docRegistry.addFileType({
     ...options,
-    name: CONTENT_TYPE_SQLITE,
+    name: ContentType.Sqlite,
     displayName: "SQLite",
     mimeTypes: ["application/vnd.sqlite3"],
     extensions: [".sqlite", ".sqlite3", ".db", ".db3", ".s3db", ".sl3"],
     contentType: "file",
     fileFormat: "base64",
   });
-  return docRegistry.getFileType(CONTENT_TYPE_SQLITE)!;
+  return docRegistry.getFileType(ContentType.Sqlite)!;
 }
