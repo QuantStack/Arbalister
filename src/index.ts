@@ -113,15 +113,18 @@ function activateArrowGrid(
   let orc_ft = addOrcFileType(app.docRegistry, { icon: getORCIcon(isLight) });
   let sqlite_ft = addSqliteFileType(app.docRegistry, { icon: getSqliteIcon(isLight) });
 
-  const factory = new ArrowGridViewerFactory({
-    name: factory_arrow,
-    label: trans.__("Arrow Dataframe Viewer"),
-    fileTypes: [csv_ft.name, avo_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name, sqlite_ft.name],
-    defaultFor: [csv_ft.name, avo_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name, sqlite_ft.name],
-    readOnly: true,
-    translator,
-    contentProviderId: NOOP_CONTENT_PROVIDER_ID,
-  });
+  const factory = new ArrowGridViewerFactory(
+    {
+      name: factory_arrow,
+      label: trans.__("Arrow Dataframe Viewer"),
+      fileTypes: [csv_ft.name, avo_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name, sqlite_ft.name],
+      defaultFor: [csv_ft.name, avo_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name, sqlite_ft.name],
+      readOnly: true,
+      translator,
+      contentProviderId: NOOP_CONTENT_PROVIDER_ID,
+    },
+    app.docRegistry,
+  );
   const tracker = new WidgetTracker<IDocumentWidget<ArrowGridViewer>>({
     namespace: "arrowviewer",
   });
