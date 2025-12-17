@@ -69,10 +69,15 @@ export class ArrowGridViewer extends Panel {
 
   protected async initialize(): Promise<void> {
     this._defaultStyle = DataGrid.defaultStyle;
+    await this._updateGrid();
+    this._revealed.resolve(undefined);
+  }
 
+  private async _updateGrid() {
     try {
-      await this._updateGrid();
-      this._revealed.resolve(undefined);
+      const model = new ArrowModel({ path: this.path });
+      await model.ready;
+      this._grid.dataModel = model;
     } catch (error) {
       const trans = Dialog.translator.load("jupyterlab");
       const buttons = [
@@ -87,15 +92,9 @@ export class ArrowGridViewer extends Panel {
       const shouldRetry = confirm.button.accept;
 
       if (shouldRetry) {
-        await this.initialize();
+        await this._updateGrid();
       }
     }
-  }
-
-  private async _updateGrid() {
-    const model = new ArrowModel({ path: this.path });
-    await model.ready;
-    this._grid.dataModel = model;
   }
 
   private async _updateRenderer(): Promise<void> {
