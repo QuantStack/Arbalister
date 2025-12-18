@@ -22,7 +22,7 @@ type OptionalizeUnion<T> = {
 export async function fetchStats(
   params: Readonly<StatsOptions & FileOptions>,
 ): Promise<StatsResponse> {
-  const queryKeys = ["path", "table_name", "delimiter"] as const;
+  const queryKeys = ["path", "delimiter"] as const;
 
   const query = new URLSearchParams();
 
@@ -54,7 +54,6 @@ export async function fetchTable(
     "row_chunk",
     "col_chunk_size",
     "col_chunk",
-    "table_name",
     "delimiter",
   ] as const;
 
