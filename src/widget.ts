@@ -1,7 +1,13 @@
 import { Dialog, showDialog } from "@jupyterlab/apputils";
 import { ABCWidgetFactory, DocumentWidget } from "@jupyterlab/docregistry";
 import { PromiseDelegate } from "@lumino/coreutils";
-import { BasicKeyHandler, BasicMouseHandler, DataGrid, TextRenderer } from "@lumino/datagrid";
+import {
+  BasicKeyHandler,
+  BasicMouseHandler,
+  BasicSelectionModel,
+  DataGrid,
+  TextRenderer,
+} from "@lumino/datagrid";
 import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
@@ -26,6 +32,7 @@ export class ArrowGridViewer extends Panel {
 
     this.addClass("arrow-viewer");
 
+    this._defaultStyle = DataGrid.defaultStyle;
     this._grid = new DataGrid({
       defaultSizes: {
         rowHeight: 24,
@@ -38,6 +45,13 @@ export class ArrowGridViewer extends Panel {
     this._grid.headerVisibility = "all";
     this._grid.keyHandler = new BasicKeyHandler();
     this._grid.mouseHandler = new BasicMouseHandler();
+    this._grid.copyConfig = {
+      separator: "\t",
+      format: DataGrid.copyFormatGeneric,
+      headers: "all",
+      warningThreshold: 1e6,
+    };
+
     this.addWidget(this._grid);
     this._ready = this.initialize();
   }
@@ -97,9 +111,10 @@ export class ArrowGridViewer extends Panel {
 
   private async _updateGrid() {
     try {
-      const model = new ArrowModel({ path: this.path }, this.fileOptions);
-      await model.ready;
-      this._grid.dataModel = model;
+      const dataModel = new ArrowModel({ path: this.path }, this.fileOptions);
+      await dataModel.ready;
+      this._grid.dataModel = dataModel;
+      this._grid.selectionModel = new BasicSelectionModel({ dataModel });
     } catch (error) {
       const trans = Dialog.translator.load("jupyterlab");
       const buttons = [
