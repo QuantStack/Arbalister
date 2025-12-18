@@ -119,3 +119,55 @@ def test_float_parsing_in_union() -> None:
     responses: Dict[str, Any] = {"data": "5.0", "number_or_float": 2.5}
     result = params.build_dataclass(UnionExample, _callback_from_mapping(responses))
     assert result == UnionExample(data="5.0", number_or_float=2.5)
+
+
+@dataclasses.dataclass
+class Address:
+    """A nested dataclass."""
+
+    street: str
+    city: str
+    zip_code: int
+
+
+@dataclasses.dataclass
+class Person:
+    """A dataclass with nested dataclass field."""
+
+    name: str
+    age: int
+    address: Address
+
+
+def test_nested_dataclass_from_dict() -> None:
+    """Nested dataclass parsed from dict."""
+    responses: Dict[str, Any] = {
+        "name": "Alice",
+        "age": "30",
+        "address": {"street": "123 Main St", "city": "Springfield", "zip_code": "12345"},
+    }
+    result = params.build_dataclass(Person, _callback_from_mapping(responses))
+    assert result == Person(
+        name="Alice", age=30, address=Address(street="123 Main St", city="Springfield", zip_code=12345)
+    )
+
+
+def test_nested_dataclass_from_json_string() -> None:
+    """Nested dataclass parsed from JSON string."""
+    responses: Dict[str, Any] = {
+        "name": "Bob",
+        "age": "25",
+        "address": '{"street": "456 Oak Ave", "city": "Shelbyville", "zip_code": "67890"}',
+    }
+    result = params.build_dataclass(Person, _callback_from_mapping(responses))
+    assert result == Person(
+        name="Bob", age=25, address=Address(street="456 Oak Ave", city="Shelbyville", zip_code=67890)
+    )
+
+
+def test_nested_dataclass_already_instance() -> None:
+    """Nested dataclass already an instance."""
+    addr = Address(street="789 Pine Rd", city="Capital City", zip_code=11111)
+    responses: Dict[str, Any] = {"name": "Charlie", "age": "35", "address": addr}
+    result = params.build_dataclass(Person, _callback_from_mapping(responses))
+    assert result == Person(name="Charlie", age=35, address=addr)

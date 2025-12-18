@@ -42,6 +42,30 @@ def _ordered_union_args(value: Any, args: tuple[type[Any], ...]) -> list[type[An
     return non_none
 
 
+def _parse_dataclass(value: Any, dataclass_type: type[Any]) -> Any:
+    """Parse a value into a dataclass instance."""
+    # If already an instance of the dataclass, return as-is
+    if isinstance(value, dataclass_type):
+        return value
+
+    # If it's a dict, build the dataclass from it
+    if isinstance(value, dict):
+        return build_dataclass(dataclass_type, lambda name, default: value.get(name, default))
+
+    # If it's a string, try to parse as JSON first
+    if isinstance(value, str):
+        import json
+
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, dict):
+                return build_dataclass(dataclass_type, lambda name, default: parsed.get(name, default))
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    raise TypeError(f"Cannot convert {type(value).__name__} to {dataclass_type.__name__}")
+
+
 def _parse_union(value: Any, args: tuple[type[Any], ...]) -> Any:
     has_none = any(arg is NoneType for arg in args)
     if value is None or (isinstance(value, str) and value.strip().lower() == "none"):
@@ -64,6 +88,9 @@ def _parse_value(value: Any, annotation: Any) -> Any:
         case _ if origin is Union or origin is UnionType:
             return _parse_union(value, get_args(annotation))
         case None:
+            # Check if annotation is a dataclass type (not an instance)
+            if dataclasses.is_dataclass(annotation) and isinstance(annotation, type):
+                return _parse_dataclass(value, annotation)
             return _convert(value, annotation)
         case _:
             return _convert(value, origin)
