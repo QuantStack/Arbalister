@@ -1,3 +1,4 @@
+import base64
 import dataclasses
 import json
 import pathlib
@@ -220,3 +221,9 @@ async def test_stats_route(
 
     assert payload["num_cols"] == len(full_table.schema)
     assert payload["num_rows"] == full_table.num_rows
+    assert payload["schema"]["mimetype"] == "application/vnd.apache.arrow.stream"
+    assert payload["schema"]["encoding"] == "base64"
+    table_64 = base64.b64decode(payload["schema"]["data"])
+    table = pa.ipc.open_stream(table_64).read_all()
+    assert table.num_rows == 0
+    assert table.schema.names == full_table.schema.names

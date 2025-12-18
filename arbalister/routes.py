@@ -1,3 +1,4 @@
+import base64
 import dataclasses
 import os
 import pathlib
@@ -121,9 +122,19 @@ class IpcRouteHandler(BaseRouteHandler):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
+class SchemaInfo:
+    """Schema information as a zero-row IPC stream."""
+
+    data: str
+    mimetype: str = "application/vnd.apache.arrow.stream"
+    encoding: str = "base64"
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class StatsResponse:
     """File statistics returned in the stats route."""
 
+    schema: SchemaInfo
     num_rows: int = 0
     num_cols: int = 0
 
@@ -151,7 +162,21 @@ class StatsRouteHandler(BaseRouteHandler):
                 batches = df.aggregate([], [dnf.count(dn.col(first_col))]).collect()
                 num_rows = batches[0].column(0)[0].as_py()
 
-        response = StatsResponse(num_cols=len(schema), num_rows=num_rows)
+        # Create a zero-row IPC stream with the table schema
+        zero_row_table = df.limit(0, 0).to_arrow_table()
+
+        sink = pa.BufferOutputStream()
+        with pa.ipc.new_stream(sink, schema) as writer:
+            writer.write_table(zero_row_table)
+
+        buf: pa.Buffer = sink.getvalue()
+        schema_64 = base64.b64encode(buf.to_pybytes()).decode("utf-8")
+
+        response = StatsResponse(
+            num_cols=len(schema),
+            num_rows=num_rows,
+            schema=SchemaInfo(data=schema_64),
+        )
         await self.finish(dataclasses.asdict(response))
 
 
