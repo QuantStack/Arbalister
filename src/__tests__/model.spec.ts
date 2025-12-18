@@ -19,6 +19,7 @@ async function fetchStatsMocked(_params: Req.StatsOptions): Promise<Req.StatsRes
   return {
     num_rows: MOCK_TABLE.numRows,
     num_cols: MOCK_TABLE.numCols,
+    schema: MOCK_TABLE.schema,
   };
 }
 
@@ -57,8 +58,8 @@ describe("ArrowModel", () => {
     await model.ready;
 
     expect(fetchStats).toHaveBeenCalledTimes(1);
-    // One for schema and once for data
-    expect(fetchTable).toHaveBeenCalledTimes(2);
+    // Schema comes from fetchStats, so fetchTable is only called once for data
+    expect(fetchTable).toHaveBeenCalledTimes(1);
 
     expect(model.schema).toEqual(MOCK_TABLE.schema);
     expect(model.columnCount("body")).toEqual(MOCK_TABLE.numCols);

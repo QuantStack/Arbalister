@@ -31,13 +31,12 @@ export class ArrowModel extends DataModel {
   }
 
   protected async initialize(): Promise<void> {
-    const [schema, stats, chunk00] = await Promise.all([
-      this.fetchSchema(),
+    const [stats, chunk00] = await Promise.all([
       fetchStats({ path: this._loadingParams.path, ...this._fileOptions }),
       this.fetchChunk([0, 0]),
     ]);
 
-    this._schema = schema;
+    this._schema = stats.schema;
     this._chunks.set([0, 0], chunk00);
     this._numCols = stats.num_cols;
     this._numRows = stats.num_rows;
@@ -150,16 +149,6 @@ export class ArrowModel extends DataModel {
       this._chunks.set(chunk_idx, table);
     });
     this._chunks.set(chunk_idx, promise);
-  }
-
-  private async fetchSchema() {
-    const table = await fetchTable({
-      path: this._loadingParams.path,
-      row_chunk_size: 0,
-      row_chunk: 0,
-      ...this._fileOptions,
-    });
-    return table.schema;
   }
 
   private chunkIdx(row: number, col: number): [number, number] {

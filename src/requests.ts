@@ -7,9 +7,22 @@ export interface StatsOptions {
   path: string;
 }
 
+interface SchemaInfo {
+  data: string;
+  mimetype: string;
+  encoding: string;
+}
+
+interface StatsResponseRaw {
+  num_rows: number;
+  num_cols: number;
+  schema: SchemaInfo;
+}
+
 export interface StatsResponse {
   num_rows: number;
   num_cols: number;
+  schema: Arrow.Schema;
 }
 
 /**
@@ -34,8 +47,35 @@ export async function fetchStats(
   }
 
   const response = await fetch(`/arrow/stats/${params.path}?${query.toString()}`);
-  const data = await response.json();
-  return data;
+  const data: StatsResponseRaw = await response.json();
+
+  // Validate encoding and content type
+  if (data.schema.encoding !== "base64") {
+    throw new Error(`Unexpected schema encoding: ${data.schema.encoding}, expected "base64"`);
+  }
+
+  if (data.schema.mimetype !== "application/vnd.apache.arrow.stream") {
+    throw new Error(
+      `Unexpected schema mimetype: ${data.schema.mimetype}, expected "application/vnd.apache.arrow.stream"`,
+    );
+  }
+
+  // Decode base64 data
+  const binaryString = atob(data.schema.data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // Parse Arrow IPC stream to extract schema
+  const table = tableFromIPC(bytes);
+  const schema = table.schema;
+
+  return {
+    num_rows: data.num_rows,
+    num_cols: data.num_cols,
+    schema,
+  };
 }
 
 export interface TableOptions {
