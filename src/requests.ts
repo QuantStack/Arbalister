@@ -12,8 +12,28 @@ export interface StatsResponse {
   num_cols: number;
 }
 
-export async function fetchStats(params: Readonly<StatsOptions>): Promise<StatsResponse> {
-  const response = await fetch(`/arrow/stats/${params.path}`);
+/**
+ * Transform a union into a union where every member is optionally present.
+ */
+type OptionalizeUnion<T> = {
+  [K in T extends unknown ? keyof T : never]?: T extends Record<K, infer V> ? V : never;
+};
+
+export async function fetchStats(
+  params: Readonly<StatsOptions & FileOptions>,
+): Promise<StatsResponse> {
+  const queryKeys = ["path", "table_name", "delimiter"] as const;
+
+  const query = new URLSearchParams();
+
+  for (const key of queryKeys) {
+    const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileOptions>)[key];
+    if (value !== undefined && value != null) {
+      query.set(key, value.toString());
+    }
+  }
+
+  const response = await fetch(`/arrow/stats/${params.path}?${query.toString()}`);
   const data = await response.json();
   return data;
 }
@@ -26,15 +46,8 @@ export interface TableOptions {
   col_chunk?: number;
 }
 
-/**
- * Transform a union into a union where every member is optionally present.
- */
-type OptionalizeUnion<T> = {
-  [K in T extends unknown ? keyof T : never]?: T extends Record<K, infer V> ? V : never;
-};
-
 export async function fetchTable(
-  params: Readonly<TableOptions> & FileOptions,
+  params: Readonly<TableOptions & FileOptions>,
 ): Promise<Arrow.Table> {
   const queryKeys = [
     "row_chunk_size",
