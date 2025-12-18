@@ -1,3 +1,4 @@
+import codecs
 import pathlib
 from typing import Any, Callable
 
@@ -7,6 +8,63 @@ import pyarrow as pa
 from . import file_format as ff
 
 ReadCallable = Callable[..., dn.DataFrame]
+
+
+def _read_csv(
+    ctx: dn.SessionContext, path: str | pathlib.Path, delimiter: str, **kwargs: dict[str, Any]
+) -> dn.DataFrame:
+    if len(delimiter) > 1:
+        delimiter = codecs.decode(delimiter, "unicode_escape")
+    return ctx.read_csv(path, delimiter=delimiter, **kwargs)  # type: ignore[arg-type]
+
+
+def _read_ipc(ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[str, Any]) -> dn.DataFrame:
+    import pyarrow.feather
+
+    #  table = pyarrow.feather.read_table(path, {**{"memory_map": True}, **kwargs})
+    table = pyarrow.feather.read_table(path, **kwargs)
+    return ctx.from_arrow(table)
+
+
+def _read_orc(ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[str, Any]) -> dn.DataFrame:
+    # Watch for https://github.com/datafusion-contrib/datafusion-orc
+    # Evolution for native datafusion reader
+    import pyarrow.orc
+
+    table = pyarrow.orc.read_table(path, **kwargs)
+    return ctx.from_arrow(table)
+
+
+def get_table_reader(format: ff.FileFormat) -> ReadCallable:
+    """Get the datafusion reader factory function for the given format."""
+    # TODO: datafusion >= 50.0
+    #  def read(ctx: dtfn.SessionContext, path: str | pathlib.Path, *args, **kwargs) -> dtfn.DataFrame:
+    #      ds = pads.dataset(source=path, format=format.value)
+    #      return ctx.read_table(ds, *args, **kwargs)
+    out: ReadCallable
+    match format:
+        case ff.FileFormat.Avro:
+            out = dn.SessionContext.read_avro
+        case ff.FileFormat.Csv:
+            out = _read_csv
+        case ff.FileFormat.Parquet:
+            out = dn.SessionContext.read_parquet
+        case ff.FileFormat.Ipc:
+            out = _read_ipc
+        case ff.FileFormat.Orc:
+            out = _read_orc
+        case ff.FileFormat.Sqlite:
+            from . import adbc as adbc
+
+            # FIXME: For now we just pretend SqliteDataFrame is a datafusion DataFrame
+            # Either we integrate it properly into Datafusion, or we create a DataFrame as a
+            # typing.protocol.
+            out = adbc.SqliteDataFrame.read_sqlite  # type: ignore[assignment]
+
+    return out
+
+
+WriteCallable = Callable[..., None]
 
 
 def _arrow_to_avro_type(field: pa.Field) -> str | dict[str, Any]:
@@ -53,57 +111,6 @@ def _write_avro(
         for rec in recs:
             writer.append(rec)
         writer.close()
-
-
-def get_table_reader(format: ff.FileFormat) -> ReadCallable:
-    """Get the datafusion reader factory function for the given format."""
-    # TODO: datafusion >= 50.0
-    #  def read(ctx: dtfn.SessionContext, path: str | pathlib.Path, *args, **kwargs) -> dtfn.DataFrame:
-    #      ds = pads.dataset(source=path, format=format.value)
-    #      return ctx.read_table(ds, *args, **kwargs)
-    out: ReadCallable
-    match format:
-        case ff.FileFormat.Avro:
-            out = dn.SessionContext.read_avro
-        case ff.FileFormat.Csv:
-            out = dn.SessionContext.read_csv
-        case ff.FileFormat.Parquet:
-            out = dn.SessionContext.read_parquet
-        case ff.FileFormat.Ipc:
-            import pyarrow.feather
-
-            def read_ipc(
-                ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[str, Any]
-            ) -> dn.DataFrame:
-                #  table = pyarrow.feather.read_table(path, {**{"memory_map": True}, **kwargs})
-                table = pyarrow.feather.read_table(path, **kwargs)
-                return ctx.from_arrow(table)
-
-            out = read_ipc
-        case ff.FileFormat.Orc:
-            # Watch for https://github.com/datafusion-contrib/datafusion-orc
-            # Evolution for native datafusion reader
-            import pyarrow.orc
-
-            def read_orc(
-                ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[str, Any]
-            ) -> dn.DataFrame:
-                table = pyarrow.orc.read_table(path, **kwargs)
-                return ctx.from_arrow(table)
-
-            out = read_orc
-        case ff.FileFormat.Sqlite:
-            from . import adbc as adbc
-
-            # FIXME: For now we just pretend SqliteDataFrame is a datafision DataFrame
-            # Either we integrate it properly into Datafusion, or we create a DataFrame as a
-            # typing.protocol.
-            out = adbc.SqliteDataFrame.read_sqlite  # type: ignore[assignment]
-
-    return out
-
-
-WriteCallable = Callable[..., None]
 
 
 def get_table_writer(format: ff.FileFormat) -> WriteCallable:

@@ -79,7 +79,7 @@ namespace Private {
     const delimiters = [
       [",", ","],
       [";", ";"],
-      ["\t", trans.__("tab")],
+      ["\\t", trans.__("tab")],
       ["|", trans.__("pipe")],
       ["#", trans.__("hash")],
     ];
