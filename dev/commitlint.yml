@@ -15,13 +15,15 @@ rules:
   type:
     level: error
     options:
-      - chore
-      - ci
-      - dev
-      - doc
-      - feat
-      - fix
-      - release
-      - test
+      - chore # General maintenance/refactoring
+      - ci # Fix and extend CI jobs
+      - dev # Improvement to development workflow
+      - doc # Add or improve documentation
+      - feat # Add a new feature
+      - fix # Resolve an issue
+      - perf # General performance improvements
+      - release # Release specific work
+      - revert # Git revert
+      - test # Fix or improve tests
   type-empty:
     level: error
