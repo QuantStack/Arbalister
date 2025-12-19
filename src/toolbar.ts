@@ -92,6 +92,8 @@ export class SqliteToolbar extends DropdownToolbar {
       options.gridViewer,
       Private.createTableNameNode(fileOptions.tableName, options.translator),
     );
+    this._translator = options.translator;
+    void this._loadTableNames(options.gridViewer.path, fileOptions.tableName);
   }
 
   get fileOptions(): SqliteOptions {
@@ -99,6 +101,26 @@ export class SqliteToolbar extends DropdownToolbar {
       tableName: this.selectNode.value,
     };
   }
+
+  private async _loadTableNames(path: string, selectedTable: string): Promise<void> {
+    try {
+      const { fetchFileInfo } = await import("./requests");
+      const fileInfo = await fetchFileInfo({ path });
+
+      if (fileInfo.table_names && fileInfo.table_names.length > 0) {
+        Private.updateTableNameOptions(
+          this.selectNode,
+          fileInfo.table_names,
+          selectedTable,
+          this._translator,
+        );
+      }
+    } catch (error) {
+      console.error("Failed to load SQLite table names:", error);
+    }
+  }
+
+  private _translator?: ITranslator;
 }
 
 namespace Private {
@@ -165,5 +187,32 @@ namespace Private {
     node.classList.add("toolbar-dropdown");
     div.appendChild(node);
     return div;
+  }
+
+  /**
+   * Update the table name select options with fetched table names.
+   */
+  export function updateTableNameOptions(
+    select: HTMLSelectElement,
+    tableNames: string[],
+    selected: string,
+    _translator?: ITranslator,
+  ): void {
+    // Clear existing options
+    select.innerHTML = "";
+
+    // If the selected table is not in the list, use the first table
+    const selectedTable = tableNames.includes(selected) ? selected : tableNames[0];
+
+    // Add new options
+    for (const tableName of tableNames) {
+      const option = document.createElement("option");
+      option.value = tableName;
+      option.textContent = tableName;
+      if (tableName === selectedTable) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    }
   }
 }

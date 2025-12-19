@@ -3,6 +3,20 @@ import type * as Arrow from "apache-arrow";
 
 import type { FileOptions } from "./file_options";
 
+export interface FileInfoOptions {
+  path: string;
+}
+
+export interface FileInfoResponse {
+  table_names: string[] | null;
+}
+
+export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<FileInfoResponse> {
+  const response = await fetch(`/arrow/file-info/${params.path}`);
+  const data: FileInfoResponse = await response.json();
+  return data;
+}
+
 export interface StatsOptions {
   path: string;
 }
