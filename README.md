@@ -63,9 +63,9 @@ This is managed by the `jlpm` command, JupyterLab's pinned version of [yarn](htt
 that is installed with JupyterLab in the Pixi file.
 You may use `yarn` or `npm` in lieu of `jlpm` below.
 
-To build the client-side extension, use:
+To install the client-side extension for development, use:
 ```sh
-pixi run jlpm build
+pixi run install-dev
 ```
 
 To run the extension in development mode in JupyterLab, run the following with pixi.
