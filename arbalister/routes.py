@@ -139,6 +139,13 @@ class StatsResponse:
     num_cols: int = 0
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class SqliteFileInfo:
+    """File-specific information returned in the file info route."""
+
+    table_names: list[str] | None = None
+
+
 class StatsRouteHandler(BaseRouteHandler):
     """An handler to get file in IPC."""
 
@@ -180,6 +187,28 @@ class StatsRouteHandler(BaseRouteHandler):
         await self.finish(dataclasses.asdict(response))
 
 
+class FileInfoRouteHandler(BaseRouteHandler):
+    """A handler to get file-specific information."""
+
+    @tornado.web.authenticated
+    async def get(self, path: str) -> None:
+        """HTTP GET return file-specific information."""
+        file = self.data_file(path)
+        file_format = ff.FileFormat.from_filename(file)
+
+        table_names: list[str] | None = None
+
+        if file_format == ff.FileFormat.Sqlite:
+            from . import adbc
+
+            table_names = adbc.SqliteDataFrame.get_table_names(file)
+
+            response = SqliteFileInfo(table_names=table_names)
+            await self.finish(dataclasses.asdict(response))
+
+        await self.finish({})
+
+
 def make_datafusion_config() -> dn.SessionConfig:
     """Return the datafusion config."""
     config = (
@@ -203,6 +232,7 @@ def setup_route_handlers(web_app: jupyter_server.serverapp.ServerWebApplication)
     handlers = [
         (url_path_join(base_url, r"arrow/stream/([^?]*)"), IpcRouteHandler, {"context": context}),
         (url_path_join(base_url, r"arrow/stats/([^?]*)"), StatsRouteHandler, {"context": context}),
+        (url_path_join(base_url, r"file/info/([^?]*)"), FileInfoRouteHandler, {"context": context}),
     ]
 
     web_app.add_handlers(host_pattern, handlers)  # type: ignore[no-untyped-call]

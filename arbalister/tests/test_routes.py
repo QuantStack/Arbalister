@@ -227,3 +227,23 @@ async def test_stats_route(
     table = pa.ipc.open_stream(table_64).read_all()
     assert table.num_rows == 0
     assert table.schema.names == full_table.schema.names
+
+
+async def test_file_info_route_sqlite(
+    jp_fetch: JpFetch,
+    table_file: pathlib.Path,
+    file_format: ff.FileFormat,
+) -> None:
+    """Test fetching file info for SQLite files returns table names."""
+    response = await jp_fetch("file/info/", str(table_file))
+
+    assert response.code == 200
+    assert response.headers["Content-Type"] == "application/json; charset=UTF-8"
+
+    payload = json.loads(response.body)
+
+    if file_format == ff.FileFormat.Sqlite:
+        assert payload["table_names"] is not None
+        assert isinstance(payload["table_names"], list)
+        assert "dummy_table_1" in payload["table_names"]
+        assert "dummy_table_2" in payload["table_names"]

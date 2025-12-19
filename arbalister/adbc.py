@@ -37,19 +37,26 @@ class SqliteDataFrame:
     _offset: int | None = None
     _select: list[str] | None = None
 
-    @classmethod
-    def read_sqlite(cls, context: Any, path: pathlib.Path | str, table_name: str | None = None) -> Self:
-        """Read an Sqlite file metadata and start a new DataFrame plan."""
+    @staticmethod
+    def get_table_names(path: pathlib.Path | str) -> list[str]:
+        """Get the list of table names in a SQLite database."""
         with adbc_sqlite.connect(str(path)) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                tables = [row for (row,) in cursor.fetchall()]
+                return [row for (row,) in cursor.fetchall()]
 
-                if table_name is None and len(tables) > 0:
-                    table_name = tables[0]
-                if table_name not in tables or table_name is None:
-                    raise ValueError(f"Invalid table name {table_name}")
+    @classmethod
+    def read_sqlite(cls, context: Any, path: pathlib.Path | str, table_name: str | None = None) -> Self:
+        """Read an Sqlite file metadata and start a new DataFrame plan."""
+        tables = cls.get_table_names(path)
 
+        if table_name is None and len(tables) > 0:
+            table_name = tables[0]
+        if table_name not in tables or table_name is None:
+            raise ValueError(f"Invalid table name {table_name}")
+
+        with adbc_sqlite.connect(str(path)) as connection:
+            with connection.cursor() as cursor:
                 cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
                 num_rows = cursor.fetchone()[0]  # type: ignore[index]
 
