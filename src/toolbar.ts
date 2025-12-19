@@ -90,15 +90,15 @@ export class SqliteToolbar extends DropdownToolbar {
   constructor(options: SqliteToolbar.Options, fileOptions: Required<SqliteOptions>) {
     super(
       options.gridViewer,
-      Private.createTableNameNode(fileOptions.tableName, options.translator),
+      Private.createTableNameNode(fileOptions.table_name, options.translator),
     );
     this._translator = options.translator;
-    void this._loadTableNames(options.gridViewer.path, fileOptions.tableName);
+    void this._loadTableNames(options.gridViewer.path, fileOptions.table_name);
   }
 
   get fileOptions(): SqliteOptions {
     return {
-      tableName: this.selectNode.value,
+      table_name: this.selectNode.value,
     };
   }
 
@@ -151,11 +151,7 @@ namespace Private {
     const trans = translator?.load("jupyterlab");
 
     // Placeholder table names that will be replaced when connected to the route
-    const tableNames: Array<[string, string]> = [
-      ["sqlite_master", "sqlite_master"],
-      ["table1", "table1"],
-      ["table2", "table2"],
-    ];
+    const tableNames: Array<[string, string]> = [["sqlite_master", "sqlite_master"]];
 
     return createDropdownNode(trans.__("Table: "), tableNames, selected);
   }

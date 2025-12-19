@@ -7,12 +7,14 @@ export interface FileInfoOptions {
   path: string;
 }
 
-export interface FileInfoResponse {
-  table_names: string[] | null;
+export interface SqliteFileInfoResponse {
+  table_names: string[];
 }
 
+export type FileInfoResponse = SqliteFileInfoResponse;
+
 export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<FileInfoResponse> {
-  const response = await fetch(`/arrow/file-info/${params.path}`);
+  const response = await fetch(`/file/info/${params.path}`);
   const data: FileInfoResponse = await response.json();
   return data;
 }
@@ -49,7 +51,7 @@ type OptionalizeUnion<T> = {
 export async function fetchStats(
   params: Readonly<StatsOptions & FileOptions>,
 ): Promise<StatsResponse> {
-  const queryKeys = ["path", "delimiter", "tableName"] as const;
+  const queryKeys = ["path", "delimiter", "table_name"] as const;
   const queryKeyMap: Record<string, string> = {
     tableName: "table_name",
   };
@@ -113,19 +115,15 @@ export async function fetchTable(
     "col_chunk_size",
     "col_chunk",
     "delimiter",
-    "tableName",
+    "table_name",
   ] as const;
-  const queryKeyMap: Record<string, string> = {
-    tableName: "table_name",
-  };
 
   const query = new URLSearchParams();
 
   for (const key of queryKeys) {
     const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileOptions>)[key];
     if (value !== undefined && value != null) {
-      const queryKey = queryKeyMap[key] || key;
-      query.set(queryKey, value.toString());
+      query.set(key, value.toString());
     }
   }
 

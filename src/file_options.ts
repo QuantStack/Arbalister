@@ -7,11 +7,11 @@ export const DEFAULT_CSV_OPTIONS: Required<CsvOptions> = {
 };
 
 export interface SqliteOptions {
-  tableName?: string;
+  table_name?: string;
 }
 
 export const DEFAULT_SQLITE_OPTIONS: Required<SqliteOptions> = {
-  tableName: "sqlite_master",
+  table_name: "sqlite_master",
 };
 
 export type FileOptions = CsvOptions | SqliteOptions;
