@@ -266,8 +266,14 @@ description = "Install NPM packages."
 inputs = ["package.json", "yarn.lock"]
 outputs = [".yarn/install-state.gz"]
 
-[tool.pixi.feature.dev.tasks.install-dev]
+[tool.pixi.feature.dev.tasks.jlpm-build]
 depends-on = ["jlpm-install"]
+cmd = "jlpm build"
+description = "Build Arbalister client package."
+inputs = ["src/", "style/"]
+
+[tool.pixi.feature.dev.tasks.install-dev]
+depends-on = ["jlpm-build"]
 cmd = "jupyter labextension develop . --overwrite"
 description = "Install extension in developer mode."
 
@@ -278,7 +284,6 @@ description = "Launch JupyterLab with the current extension installed."
 
 [tool.pixi.feature.dev.tasks]
 jlpm = { cmd = "jlpm", description = "Run Jupyter lab package manager." }
-jlpm-build = "jlpm run build"
 jlpm-watch = "jlpm run watch"
 pre-commit = { cmd = "pre-commit", description = "Run pre-commit executable." }
 commitlint = "commitlint --config dev/commitlint.yml"
