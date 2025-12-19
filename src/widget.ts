@@ -244,10 +244,11 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
   }
 
   private fileType(path: string): DocumentRegistry.IFileType | undefined {
+    const knowFileTypes = FileType.all();
     const fileTypes = this._docRegistry
       .getFileTypesForPath(path)
-      .filter((ft) => Object.values(FileType).includes(ft.name as FileType));
-    if (fileTypes.length === 1) {
+      .filter((ft) => knowFileTypes.includes(ft.name as FileType));
+    if (fileTypes.length >= 1) {
       return fileTypes[0];
     }
     return undefined;

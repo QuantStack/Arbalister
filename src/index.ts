@@ -8,21 +8,7 @@ import type * as services from "@jupyterlab/services";
 import type { Contents } from "@jupyterlab/services";
 import type { DataGrid } from "@lumino/datagrid";
 
-import {
-  addAvroFileType,
-  addIpcFileType,
-  addOrcFileType,
-  addParquetFileType,
-  addSqliteFileType,
-  ensureCsvFileType,
-} from "./filetypes";
-import {
-  getArrowIPCIcon,
-  getAvroIcon,
-  getORCIcon,
-  getParquetIcon,
-  getSqliteIcon,
-} from "./labicons";
+import { ensureFileType, FileType, updateIcon } from "./filetypes";
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
 
@@ -106,19 +92,15 @@ function activateArrowGrid(
     isLight = currentTheme ? themeManager?.isLight(currentTheme as string) : true;
   }
 
-  const csv_ft = ensureCsvFileType(app.docRegistry);
-  let prq_ft = addParquetFileType(app.docRegistry, { icon: getParquetIcon(isLight) });
-  let avo_ft = addAvroFileType(app.docRegistry, { icon: getAvroIcon(isLight) });
-  let ipc_ft = addIpcFileType(app.docRegistry, { icon: getArrowIPCIcon(isLight) });
-  let orc_ft = addOrcFileType(app.docRegistry, { icon: getORCIcon(isLight) });
-  let sqlite_ft = addSqliteFileType(app.docRegistry, { icon: getSqliteIcon(isLight) });
+  const fileTypes = FileType.all().map((ft) => ensureFileType(app.docRegistry, ft, isLight));
+  const fileTypesNames = fileTypes.map((ft) => ft.name);
 
   const factory = new ArrowGridViewerFactory(
     {
       name: factory_arrow,
       label: trans.__("Arrow Dataframe Viewer"),
-      fileTypes: [csv_ft.name, avo_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name, sqlite_ft.name],
-      defaultFor: [csv_ft.name, avo_ft.name, prq_ft.name, ipc_ft.name, orc_ft.name, sqlite_ft.name],
+      fileTypes: fileTypesNames,
+      defaultFor: fileTypesNames,
       readOnly: true,
       translator,
       contentProviderId: NOOP_CONTENT_PROVIDER_ID,
@@ -173,12 +155,13 @@ function activateArrowGrid(
       widget.content.style = style;
       widget.content.rendererConfig = rendererConfig;
     });
-    prq_ft = addParquetFileType(app.docRegistry, { icon: getParquetIcon(isLightNew) });
-    avo_ft = addAvroFileType(app.docRegistry, { icon: getAvroIcon(isLightNew) });
-    ipc_ft = addIpcFileType(app.docRegistry, { icon: getArrowIPCIcon(isLightNew) });
-    orc_ft = addOrcFileType(app.docRegistry, { icon: getORCIcon(isLightNew) });
-    sqlite_ft = addSqliteFileType(app.docRegistry, { icon: getSqliteIcon(isLightNew) });
+
+    // Update the file icons to match theme
+    FileType.all().forEach((ft) => {
+      updateIcon(app.docRegistry, ft, isLightNew);
+    });
   };
+
   if (themeManager) {
     themeManager.themeChanged.connect((_, args) => {
       try {
