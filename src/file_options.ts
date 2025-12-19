@@ -6,4 +6,12 @@ export const DEFAULT_CSV_OPTIONS: Required<CsvOptions> = {
   delimiter: ",",
 };
 
-export type FileOptions = CsvOptions;
+export interface SqliteOptions {
+  tableName?: string;
+}
+
+export const DEFAULT_SQLITE_OPTIONS: Required<SqliteOptions> = {
+  tableName: "sqlite_master",
+};
+
+export type FileOptions = CsvOptions | SqliteOptions;

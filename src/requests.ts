@@ -35,14 +35,18 @@ type OptionalizeUnion<T> = {
 export async function fetchStats(
   params: Readonly<StatsOptions & FileOptions>,
 ): Promise<StatsResponse> {
-  const queryKeys = ["path", "delimiter"] as const;
+  const queryKeys = ["path", "delimiter", "tableName"] as const;
+  const queryKeyMap: Record<string, string> = {
+    tableName: "table_name",
+  };
 
   const query = new URLSearchParams();
 
   for (const key of queryKeys) {
     const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileOptions>)[key];
     if (value !== undefined && value != null) {
-      query.set(key, value.toString());
+      const queryKey = queryKeyMap[key] || key;
+      query.set(queryKey, value.toString());
     }
   }
 
@@ -95,14 +99,19 @@ export async function fetchTable(
     "col_chunk_size",
     "col_chunk",
     "delimiter",
+    "tableName",
   ] as const;
+  const queryKeyMap: Record<string, string> = {
+    tableName: "table_name",
+  };
 
   const query = new URLSearchParams();
 
   for (const key of queryKeys) {
     const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileOptions>)[key];
     if (value !== undefined && value != null) {
-      query.set(key, value.toString());
+      const queryKey = queryKeyMap[key] || key;
+      query.set(queryKey, value.toString());
     }
   }
 

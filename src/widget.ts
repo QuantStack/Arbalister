@@ -12,10 +12,10 @@ import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
 
-import { DEFAULT_CSV_OPTIONS } from "./file_options";
+import { DEFAULT_CSV_OPTIONS, DEFAULT_SQLITE_OPTIONS } from "./file_options";
 import { FileType } from "./filetypes";
 import { ArrowModel } from "./model";
-import { CsvToolbar } from "./toolbar";
+import { CsvToolbar, SqliteToolbar } from "./toolbar";
 import type { FileOptions } from "./file_options";
 
 export namespace ArrowGridViewer {
@@ -200,6 +200,8 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
     let fileOption: FileOptions = {};
     if (ft?.name === FileType.Csv) {
       fileOption = DEFAULT_CSV_OPTIONS;
+    } else if (ft?.name === FileType.Sqlite) {
+      fileOption = DEFAULT_SQLITE_OPTIONS;
     }
     const widget = new ArrowGridDocumentWidget({ context, translator }, fileOption);
     this.updateIcon(widget);
@@ -223,6 +225,19 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
               translator: this.translator,
             },
             DEFAULT_CSV_OPTIONS,
+          ),
+        },
+      ];
+    } else if (ft?.name === FileType.Sqlite) {
+      return [
+        {
+          name: "arbalister:sqlite-toolbar",
+          widget: new SqliteToolbar(
+            {
+              gridViewer: widget.content,
+              translator: this.translator,
+            },
+            DEFAULT_SQLITE_OPTIONS,
           ),
         },
       ];
