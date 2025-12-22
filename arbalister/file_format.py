@@ -28,7 +28,7 @@ class FileFormat(enum.StrEnum):
             return ft
         # Match other known values
         match file_type:
-            case "ipc" | "feather":
+            case "ipc" | "feather" | "arrow":
                 return cls.Ipc
             case "sqlite3" | "db" | "db3" | "s3db" | "sl3":
                 return cls.Sqlite
