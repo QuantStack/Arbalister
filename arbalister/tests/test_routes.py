@@ -16,13 +16,13 @@ import arbalister.file_format as ff
 
 @pytest.fixture(
     params=[
-        (ff.FileFormat.Avro, arb.routes.NoReadParams()),
-        (ff.FileFormat.Csv, arb.routes.NoReadParams()),
+        (ff.FileFormat.Avro, arb.routes.Empty()),
+        (ff.FileFormat.Csv, arb.routes.Empty()),
         (ff.FileFormat.Csv, arb.routes.CSVReadParams(delimiter=";")),
-        (ff.FileFormat.Ipc, arb.routes.NoReadParams()),
-        (ff.FileFormat.Orc, arb.routes.NoReadParams()),
-        (ff.FileFormat.Parquet, arb.routes.NoReadParams()),
-        (ff.FileFormat.Sqlite, arb.routes.NoReadParams()),
+        (ff.FileFormat.Ipc, arb.routes.Empty()),
+        (ff.FileFormat.Orc, arb.routes.Empty()),
+        (ff.FileFormat.Parquet, arb.routes.Empty()),
+        (ff.FileFormat.Sqlite, arb.routes.Empty()),
         (ff.FileFormat.Sqlite, arb.routes.SqliteReadParams(table_name="dummy_table_2")),
     ],
     ids=lambda f_p: f"{f_p[0].value}-{dataclasses.asdict(f_p[1])}",
@@ -241,9 +241,12 @@ async def test_file_info_route_sqlite(
     assert response.headers["Content-Type"] == "application/json; charset=UTF-8"
 
     payload = json.loads(response.body)
+    info = payload["info"]
+    read_params = payload["read_params"]
 
     if file_format == ff.FileFormat.Sqlite:
-        assert payload["table_names"] is not None
-        assert isinstance(payload["table_names"], list)
-        assert "dummy_table_1" in payload["table_names"]
-        assert "dummy_table_2" in payload["table_names"]
+        assert info["table_names"] is not None
+        assert isinstance(info["table_names"], list)
+        assert "dummy_table_1" in info["table_names"]
+        assert "dummy_table_2" in info["table_names"]
+        assert read_params["table_name"] == info["table_names"][0]
