@@ -184,7 +184,14 @@ class StatsRouteHandler(BaseRouteHandler):
 class SqliteFileInfo:
     """Sqlite specific information about a file."""
 
-    table_names: list[str] | None = None
+    table_names: list[str]
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class CsvFileInfo:
+    """Csv specific information about a file."""
+
+    delimiters: list[str] = dataclasses.field(default_factory=lambda: [",", ";", "\\t", "|", "#"])
 
 
 FileInfo = SqliteFileInfo
@@ -198,6 +205,7 @@ class FileInfoResponse[I, P]:
     read_params: P
 
 
+CsvFileInfoResponse = FileInfoResponse[CsvFileInfo, CSVReadParams]
 SqliteFileInfoResponse = FileInfoResponse[SqliteFileInfo, SqliteReadParams]
 
 NoFileInfoResponse = FileInfoResponse[Empty, Empty]
@@ -213,6 +221,13 @@ class FileInfoRouteHandler(BaseRouteHandler):
         file_format = ff.FileFormat.from_filename(file)
 
         match file_format:
+            case ff.FileFormat.Csv:
+                info = CsvFileInfo()
+                csv_response = CsvFileInfoResponse(
+                    info=info,
+                    read_params=CSVReadParams(delimiter=info.delimiters[0]),
+                )
+                await self.finish(dataclasses.asdict(csv_response))
             case ff.FileFormat.Sqlite:
                 from . import adbc
 
