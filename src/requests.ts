@@ -1,12 +1,24 @@
 import { tableFromIPC } from "apache-arrow";
 import type * as Arrow from "apache-arrow";
 
-import type { FileInfo, FileOptions } from "./file_options";
+import type { FileInfo, FileInfoFor, FileOptions, FileOptionsFor } from "./file-options";
+import type { FileType } from "./file-types";
 
 export interface FileInfoOptions {
   path: string;
 }
 
+/**
+ * Type-safe file info response for a specific file type.
+ */
+export interface FileInfoResponseFor<T extends FileType> {
+  info: FileInfoFor<T>;
+  read_params: FileOptionsFor<T>;
+}
+
+/**
+ * Generic file info response (union of all file types).
+ */
 export interface FileInfoResponse {
   info: FileInfo;
   read_params: FileOptions;
@@ -21,6 +33,11 @@ export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<
 export interface StatsOptions {
   path: string;
 }
+
+/**
+ * Type-safe stats options for a specific file type.
+ */
+export type StatsOptionsFor<T extends FileType> = StatsOptions & FileOptionsFor<T>;
 
 interface SchemaInfo {
   data: string;
@@ -104,6 +121,11 @@ export interface TableOptions {
   col_chunk_size?: number;
   col_chunk?: number;
 }
+
+/**
+ * Type-safe table options for a specific file type.
+ */
+export type TableOptionsFor<T extends FileType> = TableOptions & FileOptionsFor<T>;
 
 export async function fetchTable(
   params: Readonly<TableOptions & FileOptions>,

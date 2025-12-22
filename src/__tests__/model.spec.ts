@@ -5,7 +5,7 @@ import type * as Arrow from "apache-arrow";
 
 import { ArrowModel } from "../model";
 import { fetchStats, fetchTable } from "../requests";
-import type { FileInfo, FileOptions } from "../file_options";
+import type { FileInfo, FileOptions } from "../file-options";
 import type * as Req from "../requests";
 
 const MOCK_TABLE = tableFromArrays({

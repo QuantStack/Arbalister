@@ -7,15 +7,16 @@ import { Widget } from "@lumino/widgets";
 import type { ITranslator } from "@jupyterlab/translation";
 import type { Message } from "@lumino/messaging";
 
-import { FileType } from "./filetypes";
+import { FileType } from "./file-types";
 import type {
   CsvFileInfo,
-  CsvOptions,
-  FileInfo,
+  CsvFileOptions,
+  FileInfoFor,
   FileOptions,
+  FileOptionsFor,
   SqliteFileInfo,
-  SqliteOptions,
-} from "./file_options";
+  SqliteFileOptions,
+} from "./file-options";
 import type { ArrowGridViewer } from "./widget";
 
 /**
@@ -73,14 +74,14 @@ export namespace CsvToolbar {
 }
 
 export class CsvToolbar extends DropdownToolbar {
-  constructor(options: CsvToolbar.Options, fileOptions: CsvOptions, fileInfo: CsvFileInfo) {
+  constructor(options: CsvToolbar.Options, fileOptions: CsvFileOptions, fileInfo: CsvFileInfo) {
     super(
       options.gridViewer,
       Private.createDelimiterNode(fileOptions.delimiter, fileInfo.delimiters, options.translator),
     );
   }
 
-  get fileOptions(): CsvOptions {
+  get fileOptions(): CsvFileOptions {
     return {
       delimiter: this.selectNode.value,
     };
@@ -97,7 +98,7 @@ export namespace SqliteToolbar {
 export class SqliteToolbar extends DropdownToolbar {
   constructor(
     options: SqliteToolbar.Options,
-    fileOptions: SqliteOptions,
+    fileOptions: SqliteFileOptions,
     fileInfo: SqliteFileInfo,
   ) {
     super(
@@ -106,7 +107,7 @@ export class SqliteToolbar extends DropdownToolbar {
     );
   }
 
-  get fileOptions(): SqliteOptions {
+  get fileOptions(): SqliteFileOptions {
     return {
       table_name: this.selectNode.value,
     };
@@ -123,18 +124,23 @@ export interface ToolbarOptions {
 
 /**
  * Factory function to create the appropriate toolbar for a given file type.
+ * Type-safe overloads ensure the correct options and info types are used.
  */
-export function createToolbar(
-  fileType: FileType,
+export function createToolbar<T extends FileType>(
+  fileType: T,
   options: ToolbarOptions,
-  fileOptions: FileOptions,
-  fileInfo: FileInfo,
+  fileOptions: FileOptionsFor<T>,
+  fileInfo: FileInfoFor<T>,
 ): Widget | null {
   switch (fileType) {
     case FileType.Csv:
-      return new CsvToolbar(options, fileOptions as CsvOptions, fileInfo as CsvFileInfo);
+      return new CsvToolbar(options, fileOptions as CsvFileOptions, fileInfo as CsvFileInfo);
     case FileType.Sqlite:
-      return new SqliteToolbar(options, fileOptions as SqliteOptions, fileInfo as SqliteFileInfo);
+      return new SqliteToolbar(
+        options,
+        fileOptions as SqliteFileOptions,
+        fileInfo as SqliteFileInfo,
+      );
     default:
       return null;
   }

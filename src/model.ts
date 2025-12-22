@@ -4,7 +4,7 @@ import type * as Arrow from "apache-arrow";
 
 import { PairMap } from "./collection";
 import { fetchFileInfo, fetchStats, fetchTable } from "./requests";
-import type { FileInfo, FileOptions } from "./file_options";
+import type { FileInfo, FileOptions } from "./file-options";
 
 export namespace ArrowModel {
   export interface LoadingOptions {

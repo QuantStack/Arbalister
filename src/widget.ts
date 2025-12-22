@@ -12,10 +12,10 @@ import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
 
-import { FileType } from "./filetypes";
+import { FileType } from "./file-types";
 import { ArrowModel } from "./model";
 import { createToolbar } from "./toolbar";
-import type { FileInfo, FileOptions } from "./file_options";
+import type { FileInfo, FileOptions } from "./file-options";
 
 export namespace ArrowGridViewer {
   export interface Options {
