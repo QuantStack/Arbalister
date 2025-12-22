@@ -205,27 +205,27 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
     const translator = this.translator;
     const widget = new ArrowGridDocumentWidget({ context, translator });
     this.updateIcon(widget);
+    widget.content.ready.then(() => {
+      this.makeToolbarItems(widget.content).forEach(({ widget: toolbarItem, name }) => {
+        widget.toolbar.addItem(name, toolbarItem);
+      });
+    });
     return widget;
   }
 
-  /**
-   * Default factory for toolbar items to be added after the widget is created.
-   */
-  protected defaultToolbarFactory(
-    widget: IDocumentWidget<ArrowGridViewer>,
-  ): DocumentRegistry.IToolbarItem[] {
-    const ft = this.fileType(widget.context.path);
+  protected makeToolbarItems(gridViewer: ArrowGridViewer): DocumentRegistry.IToolbarItem[] {
+    const ft = this.fileType(gridViewer.path);
     if (ft?.name === FileType.Csv) {
       return [
         {
           name: "arbalister:csv-toolbar",
           widget: new CsvToolbar(
             {
-              gridViewer: widget.content,
+              gridViewer,
               translator: this.translator,
             },
-            widget.content.fileOptions as CsvOptions,
-            widget.content.fileInfo as CsvFileInfo,
+            gridViewer.fileOptions as CsvOptions,
+            gridViewer.fileInfo as CsvFileInfo,
           ),
         },
       ];
@@ -235,11 +235,11 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
           name: "arbalister:sqlite-toolbar",
           widget: new SqliteToolbar(
             {
-              gridViewer: widget.content,
+              gridViewer,
               translator: this.translator,
             },
-            widget.content.fileOptions as SqliteOptions,
-            widget.content.fileInfo as SqliteFileInfo,
+            gridViewer.fileOptions as SqliteOptions,
+            gridViewer.fileInfo as SqliteFileInfo,
           ),
         },
       ];

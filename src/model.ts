@@ -65,7 +65,9 @@ export class ArrowModel extends DataModel {
 
   set fileOptions(fileOptions: FileOptions) {
     this._fileOptions = fileOptions;
-    this._ready = this.initialize();
+    this._ready = this.initialize().then(() => {
+      this.emitChanged({ type: "model-reset" });
+    });
   }
 
   get ready(): Promise<void> {
