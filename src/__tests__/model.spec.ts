@@ -5,6 +5,7 @@ import type * as Arrow from "apache-arrow";
 
 import { ArrowModel } from "../model";
 import { fetchStats, fetchTable } from "../requests";
+import type { FileInfo, FileOptions } from "../file_options";
 import type * as Req from "../requests";
 
 const MOCK_TABLE = tableFromArrays({
@@ -52,7 +53,7 @@ describe("ArrowModel", () => {
   (fetchTable as jest.Mock).mockImplementation(fetchTableMocked);
   (fetchStats as jest.Mock).mockImplementation(fetchStatsMocked);
 
-  const model = new ArrowModel({ path: "test/path.parquet" }, {});
+  const model = new ArrowModel({ path: "test/path.parquet" }, {} as FileOptions, {} as FileInfo);
 
   it("should initialize data", async () => {
     await model.ready;

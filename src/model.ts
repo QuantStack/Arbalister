@@ -3,8 +3,8 @@ import { DataModel } from "@lumino/datagrid";
 import type * as Arrow from "apache-arrow";
 
 import { PairMap } from "./collection";
-import { fetchStats, fetchTable } from "./requests";
-import type { FileOptions } from "./file_options";
+import { fetchFileInfo, fetchStats, fetchTable } from "./requests";
+import type { FileInfo, FileOptions } from "./file_options";
 
 export namespace ArrowModel {
   export interface LoadingOptions {
@@ -16,7 +16,18 @@ export namespace ArrowModel {
 }
 
 export class ArrowModel extends DataModel {
-  constructor(loadingOptions: ArrowModel.LoadingOptions, fileOptions: FileOptions) {
+  static async fromRemoteFileInfo(loadingOptions: ArrowModel.LoadingOptions) {
+    const { info: fileInfo, read_params: fileOptions } = await fetchFileInfo({
+      path: loadingOptions.path,
+    });
+    return new ArrowModel(loadingOptions, fileOptions, fileInfo);
+  }
+
+  constructor(
+    loadingOptions: ArrowModel.LoadingOptions,
+    fileOptions: FileOptions,
+    fileInfo: FileInfo,
+  ) {
     super();
 
     this._loadingParams = {
@@ -26,6 +37,7 @@ export class ArrowModel extends DataModel {
       ...loadingOptions,
     };
     this._fileOptions = fileOptions;
+    this._fileInfo = fileInfo;
 
     this._ready = this.initialize();
   }
@@ -37,9 +49,23 @@ export class ArrowModel extends DataModel {
     ]);
 
     this._schema = stats.schema;
-    this._chunks.set([0, 0], chunk00);
     this._numCols = stats.num_cols;
     this._numRows = stats.num_rows;
+    this._chunks = new PairMap();
+    this._chunks.set([0, 0], chunk00);
+  }
+
+  get fileInfo(): Readonly<FileInfo> {
+    return this._fileInfo;
+  }
+
+  get fileOptions(): Readonly<FileOptions> {
+    return this._fileOptions;
+  }
+
+  set fileOptions(fileOptions: FileOptions) {
+    this._fileOptions = fileOptions;
+    this._ready = this.initialize();
   }
 
   get ready(): Promise<void> {
@@ -167,7 +193,8 @@ export class ArrowModel extends DataModel {
   }
 
   private readonly _loadingParams: Required<ArrowModel.LoadingOptions>;
-  private readonly _fileOptions: FileOptions;
+  private readonly _fileInfo: FileInfo;
+  private _fileOptions: FileOptions;
 
   private _numRows: number = 0;
   private _numCols: number = 0;

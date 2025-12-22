@@ -1,18 +1,10 @@
 export interface CsvOptions {
-  delimiter?: string;
+  delimiter: string;
 }
-
-export const DEFAULT_CSV_OPTIONS: Required<CsvOptions> = {
-  delimiter: ",",
-};
 
 export interface SqliteOptions {
-  table_name?: string;
+  table_name: string;
 }
-
-export const DEFAULT_SQLITE_OPTIONS: Required<SqliteOptions> = {
-  table_name: "Table",
-};
 
 export type FileOptions = CsvOptions | SqliteOptions;
 

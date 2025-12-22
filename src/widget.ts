@@ -12,11 +12,17 @@ import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
 
-import { DEFAULT_CSV_OPTIONS, DEFAULT_SQLITE_OPTIONS } from "./file_options";
 import { FileType } from "./filetypes";
 import { ArrowModel } from "./model";
 import { CsvToolbar, SqliteToolbar } from "./toolbar";
-import type { FileOptions } from "./file_options";
+import type {
+  CsvFileInfo,
+  CsvOptions,
+  FileInfo,
+  FileOptions,
+  SqliteFileInfo,
+  SqliteOptions,
+} from "./file_options";
 
 export namespace ArrowGridViewer {
   export interface Options {
@@ -25,10 +31,9 @@ export namespace ArrowGridViewer {
 }
 
 export class ArrowGridViewer extends Panel {
-  constructor(options: ArrowGridViewer.Options, fileOptions: FileOptions) {
+  constructor(options: ArrowGridViewer.Options) {
     super();
     this._options = options;
-    this._fileOptions = fileOptions;
 
     this.addClass("arrow-viewer");
 
@@ -68,13 +73,20 @@ export class ArrowGridViewer extends Panel {
     return this._options.path;
   }
 
+  private get dataModel(): ArrowModel {
+    return this._grid.dataModel as ArrowModel;
+  }
+
+  get fileInfo(): Readonly<FileInfo> {
+    return this.dataModel.fileInfo;
+  }
+
   get fileOptions(): Readonly<FileOptions> {
-    return this._fileOptions;
+    return this.dataModel.fileOptions;
   }
 
   set fileOptions(fileOptions: FileOptions) {
-    this._fileOptions = fileOptions;
-    this._updateGrid();
+    this.dataModel.fileOptions = fileOptions;
   }
 
   updateFileOptions(fileOptionsUpdate: Partial<FileOptions>) {
@@ -111,7 +123,7 @@ export class ArrowGridViewer extends Panel {
 
   private async _updateGrid() {
     try {
-      const dataModel = new ArrowModel({ path: this.path }, this.fileOptions);
+      const dataModel = await ArrowModel.fromRemoteFileInfo({ path: this.path });
       await dataModel.ready;
       this._grid.dataModel = dataModel;
       this._grid.selectionModel = new BasicSelectionModel({ dataModel });
@@ -153,7 +165,6 @@ export class ArrowGridViewer extends Panel {
   }
 
   private _options: ArrowGridViewer.Options;
-  private _fileOptions: FileOptions;
   private _grid: DataGridModule.DataGrid;
   private _revealed = new PromiseDelegate<void>();
   private _ready: Promise<void>;
@@ -168,19 +179,16 @@ export namespace ArrowGridDocumentWidget {
 }
 
 export class ArrowGridDocumentWidget extends DocumentWidget<ArrowGridViewer> {
-  constructor(options: ArrowGridDocumentWidget.IOptions, fileOptions: FileOptions) {
+  constructor(options: ArrowGridDocumentWidget.IOptions) {
     let { content, context, reveal, ...other } = options;
-    content = content || ArrowGridDocumentWidget._createContent(context, fileOptions);
-    reveal = Promise.all([reveal, content.revealed, context.ready]);
+    content = content || ArrowGridDocumentWidget._createContent(context.path);
+    reveal = Promise.all([reveal, content.ready, content.revealed, context.ready]);
     super({ content, context, reveal, ...other });
     this.addClass("arrow-viewer-base");
   }
 
-  private static _createContent(
-    context: DocumentRegistry.IContext<DocumentRegistry.IModel>,
-    fileOptions: FileOptions,
-  ): ArrowGridViewer {
-    return new ArrowGridViewer({ path: context.path }, fileOptions);
+  private static _createContent(path: string): ArrowGridViewer {
+    return new ArrowGridViewer({ path });
   }
 }
 
@@ -195,15 +203,7 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
 
   protected createNewWidget(context: DocumentRegistry.Context): IDocumentWidget<ArrowGridViewer> {
     const translator = this.translator;
-    const ft = this.fileType(context.path);
-
-    let fileOption: FileOptions = {};
-    if (ft?.name === FileType.Csv) {
-      fileOption = DEFAULT_CSV_OPTIONS;
-    } else if (ft?.name === FileType.Sqlite) {
-      fileOption = DEFAULT_SQLITE_OPTIONS;
-    }
-    const widget = new ArrowGridDocumentWidget({ context, translator }, fileOption);
+    const widget = new ArrowGridDocumentWidget({ context, translator });
     this.updateIcon(widget);
     return widget;
   }
@@ -224,7 +224,8 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
               gridViewer: widget.content,
               translator: this.translator,
             },
-            DEFAULT_CSV_OPTIONS,
+            widget.content.fileOptions as CsvOptions,
+            widget.content.fileInfo as CsvFileInfo,
           ),
         },
       ];
@@ -237,7 +238,8 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
               gridViewer: widget.content,
               translator: this.translator,
             },
-            DEFAULT_SQLITE_OPTIONS,
+            widget.content.fileOptions as SqliteOptions,
+            widget.content.fileInfo as SqliteFileInfo,
           ),
         },
       ];

@@ -7,7 +7,13 @@ import { Widget } from "@lumino/widgets";
 import type { ITranslator } from "@jupyterlab/translation";
 import type { Message } from "@lumino/messaging";
 
-import type { CsvOptions, FileOptions, SqliteOptions } from "./file_options";
+import type {
+  CsvFileInfo,
+  CsvOptions,
+  FileOptions,
+  SqliteFileInfo,
+  SqliteOptions,
+} from "./file_options";
 import type { ArrowGridViewer } from "./widget";
 
 /**
@@ -65,10 +71,10 @@ export namespace CsvToolbar {
 }
 
 export class CsvToolbar extends DropdownToolbar {
-  constructor(options: CsvToolbar.Options, fileOptions: Required<CsvOptions>) {
+  constructor(options: CsvToolbar.Options, fileOptions: CsvOptions, fileInfo: CsvFileInfo) {
     super(
       options.gridViewer,
-      Private.createDelimiterNode(fileOptions.delimiter, options.translator),
+      Private.createDelimiterNode(fileOptions.delimiter, fileInfo.delimiters, options.translator),
     );
   }
 
@@ -87,13 +93,15 @@ export namespace SqliteToolbar {
 }
 
 export class SqliteToolbar extends DropdownToolbar {
-  constructor(options: SqliteToolbar.Options, fileOptions: Required<SqliteOptions>) {
+  constructor(
+    options: SqliteToolbar.Options,
+    fileOptions: SqliteOptions,
+    fileInfo: SqliteFileInfo,
+  ) {
     super(
       options.gridViewer,
-      Private.createTableNameNode(fileOptions.table_name, options.translator),
+      Private.createTableNameNode(fileOptions.table_name, fileInfo.table_names, options.translator),
     );
-    this._translator = options.translator;
-    void this._loadTableNames(options.gridViewer.path, fileOptions.table_name);
   }
 
   get fileOptions(): SqliteOptions {
@@ -101,59 +109,35 @@ export class SqliteToolbar extends DropdownToolbar {
       table_name: this.selectNode.value,
     };
   }
-
-  private async _loadTableNames(path: string, selectedTable: string): Promise<void> {
-    try {
-      const { fetchFileInfo } = await import("./requests");
-      const fileInfo = await fetchFileInfo({ path });
-
-      if (fileInfo.table_names && fileInfo.table_names.length > 0) {
-        Private.updateTableNameOptions(
-          this.selectNode,
-          fileInfo.table_names,
-          selectedTable,
-          this._translator,
-        );
-      }
-    } catch (error) {
-      console.error("Failed to load SQLite table names:", error);
-    }
-  }
-
-  private _translator?: ITranslator;
 }
 
 namespace Private {
   /**
    * Create the node for the delimiter switcher.
    */
-  export function createDelimiterNode(selected: string, translator?: ITranslator): HTMLElement {
+  export function createDelimiterNode(
+    selected: string,
+    delimiters: string[],
+    translator?: ITranslator,
+  ): HTMLElement {
     translator = translator || nullTranslator;
     const trans = translator?.load("jupyterlab");
-
-    // The supported parsing delimiters and labels.
-    const delimiters: Array<[string, string]> = [
-      [",", ","],
-      [";", ";"],
-      ["\\t", trans.__("tab")],
-      ["|", trans.__("pipe")],
-      ["#", trans.__("hash")],
-    ];
-
-    return createDropdownNode(trans.__("Delimiter: "), delimiters, selected);
+    const delimiters_map: [string, string][] = delimiters.map((d) => [d, d]);
+    return createDropdownNode(trans.__("Delimiter: "), delimiters_map, selected);
   }
 
   /**
    * Create the node for the table name switcher.
    */
-  export function createTableNameNode(selected: string, translator?: ITranslator): HTMLElement {
+  export function createTableNameNode(
+    selected: string,
+    table_names: string[],
+    translator?: ITranslator,
+  ): HTMLElement {
     translator = translator || nullTranslator;
     const trans = translator?.load("jupyterlab");
-
-    // Placeholder table names that will be replaced when connected to the route
-    const tableNames: Array<[string, string]> = [["sqlite_master", "sqlite_master"]];
-
-    return createDropdownNode(trans.__("Table: "), tableNames, selected);
+    const table_names_map: [string, string][] = table_names.map((d) => [d, d]);
+    return createDropdownNode(trans.__("Table: "), table_names_map, selected);
   }
 
   /**
@@ -183,32 +167,5 @@ namespace Private {
     node.classList.add("toolbar-dropdown");
     div.appendChild(node);
     return div;
-  }
-
-  /**
-   * Update the table name select options with fetched table names.
-   */
-  export function updateTableNameOptions(
-    select: HTMLSelectElement,
-    tableNames: string[],
-    selected: string,
-    _translator?: ITranslator,
-  ): void {
-    // Clear existing options
-    select.innerHTML = "";
-
-    // If the selected table is not in the list, use the first table
-    const selectedTable = tableNames.includes(selected) ? selected : tableNames[0];
-
-    // Add new options
-    for (const tableName of tableNames) {
-      const option = document.createElement("option");
-      option.value = tableName;
-      option.textContent = tableName;
-      if (tableName === selectedTable) {
-        option.selected = true;
-      }
-      select.appendChild(option);
-    }
   }
 }
