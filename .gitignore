@@ -134,3 +134,4 @@ dmypy.json
 
 # Generated files
 /data/gen/
+/data/samples/

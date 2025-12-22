@@ -225,6 +225,18 @@ description = "Run all tests."
 depends-on = ["check", "test"]
 description = "Run all formatters, code checks, and tests."
 
+[tool.pixi.feature.dev.dependencies]
+curl = "*"
+jupyterlab = ">=4.4"
+jupyterlab-lsp = "*"
+python-lsp-server-base = ">=1.11.0"
+python-lsp-ruff = ">=2.2.1"
+pylsp-mypy = ">=0.6.8"
+vscode-langservers-extracted = ">=4.10"
+typescript-language-server = ">=5.1"
+typos-lsp = "*"
+commitlint-rs = "*"
+
 [tool.pixi.feature.dev.tasks.gen-data]
 cmd = """
 python data/generate.py batch \
@@ -249,16 +261,19 @@ python data/generate.py coordinate \
 outputs = ["data/gen/**/large.parquet"]
 description = """Generate a large parquet file."""
 
-[tool.pixi.feature.dev.dependencies]
-jupyterlab = ">=4.4"
-jupyterlab-lsp = "*"
-python-lsp-server-base = ">=1.11.0"
-python-lsp-ruff = ">=2.2.1"
-pylsp-mypy = ">=0.6.8"
-vscode-langservers-extracted = ">=4.10"
-typescript-language-server = ">=5.1"
-typos-lsp = "*"
-commitlint-rs = "*"
+[tool.pixi.feature.dev.tasks.fetch-data]
+cmd = """
+mkdir -p data/samples/ && \
+curl -L -o data/samples/simple-stories.parquet \
+  https://huggingface.co/datasets/SimpleStories/SimpleStories/resolve/main/processed.parquet && \
+curl -L -o data/samples/chinook.sqlite \
+  https://github.com/lerocha/chinook-database/releases/download/v1.4.5/Chinook_Sqlite.sqlite && \
+curl -L -o data/samples/linkedIn.csv \
+  https://huggingface.co/datasets/datastax/linkedin_job_listings/resolve/main/postings.csv
+"""
+outputs = ["data/samples/*"]
+description = "Download different data files from the Internet."
+
 
 [tool.pixi.feature.dev.tasks.jlpm-install]
 cmd = "jlpm install"
