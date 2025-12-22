@@ -4,7 +4,7 @@ import type * as Arrow from "apache-arrow";
 
 import { PairMap } from "./collection";
 import { fetchFileInfo, fetchStats, fetchTable } from "./requests";
-import type { FileInfo, FileOptions } from "./file_options";
+import type { FileInfo, FileReadOptions } from "./file-options";
 
 export namespace ArrowModel {
   export interface LoadingOptions {
@@ -17,7 +17,7 @@ export namespace ArrowModel {
 
 export class ArrowModel extends DataModel {
   static async fromRemoteFileInfo(loadingOptions: ArrowModel.LoadingOptions) {
-    const { info: fileInfo, read_params: fileOptions } = await fetchFileInfo({
+    const { info: fileInfo, default_options: fileOptions } = await fetchFileInfo({
       path: loadingOptions.path,
     });
     return new ArrowModel(loadingOptions, fileOptions, fileInfo);
@@ -25,7 +25,7 @@ export class ArrowModel extends DataModel {
 
   constructor(
     loadingOptions: ArrowModel.LoadingOptions,
-    fileOptions: FileOptions,
+    fileOptions: FileReadOptions,
     fileInfo: FileInfo,
   ) {
     super();
@@ -59,11 +59,11 @@ export class ArrowModel extends DataModel {
     return this._fileInfo;
   }
 
-  get fileOptions(): Readonly<FileOptions> {
+  get fileReadOptions(): Readonly<FileReadOptions> {
     return this._fileOptions;
   }
 
-  set fileOptions(fileOptions: FileOptions) {
+  set fileReadOptions(fileOptions: FileReadOptions) {
     this._fileOptions = fileOptions;
     this._ready = this.initialize().then(() => {
       this.emitChanged({ type: "model-reset" });
@@ -196,7 +196,7 @@ export class ArrowModel extends DataModel {
 
   private readonly _loadingParams: Required<ArrowModel.LoadingOptions>;
   private readonly _fileInfo: FileInfo;
-  private _fileOptions: FileOptions;
+  private _fileOptions: FileReadOptions;
 
   private _numRows: number = 0;
   private _numCols: number = 0;

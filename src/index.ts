@@ -8,7 +8,7 @@ import type * as services from "@jupyterlab/services";
 import type { Contents } from "@jupyterlab/services";
 import type { DataGrid } from "@lumino/datagrid";
 
-import { ensureFileType, FileType, updateIcon } from "./filetypes";
+import { ensureFileType, FileType, updateIcon } from "./file-types";
 import { ArrowGridViewerFactory } from "./widget";
 import type { ArrowGridViewer, ITextRenderConfig } from "./widget";
 

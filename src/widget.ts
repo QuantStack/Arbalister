@@ -12,10 +12,10 @@ import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
 
-import { FileType } from "./filetypes";
+import { FileType } from "./file-types";
 import { ArrowModel } from "./model";
 import { createToolbar } from "./toolbar";
-import type { FileInfo, FileOptions } from "./file_options";
+import type { FileInfo, FileReadOptions } from "./file-options";
 
 export namespace ArrowGridViewer {
   export interface Options {
@@ -74,17 +74,17 @@ export class ArrowGridViewer extends Panel {
     return this.dataModel.fileInfo;
   }
 
-  get fileOptions(): Readonly<FileOptions> {
-    return this.dataModel.fileOptions;
+  get fileReadOptions(): Readonly<FileReadOptions> {
+    return this.dataModel.fileReadOptions;
   }
 
-  set fileOptions(fileOptions: FileOptions) {
-    this.dataModel.fileOptions = fileOptions;
+  set fileReadOptions(fileOptions: FileReadOptions) {
+    this.dataModel.fileReadOptions = fileOptions;
   }
 
-  updateFileOptions(fileOptionsUpdate: Partial<FileOptions>) {
-    this.fileOptions = {
-      ...this.fileOptions,
+  updateFileReadOptions(fileOptionsUpdate: Partial<FileReadOptions>) {
+    this.fileReadOptions = {
+      ...this.fileReadOptions,
       ...fileOptionsUpdate,
     };
   }
@@ -215,7 +215,7 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
     const toolbar = createToolbar(
       ft.name as FileType,
       { gridViewer, translator: this.translator },
-      gridViewer.fileOptions,
+      gridViewer.fileReadOptions,
       gridViewer.fileInfo,
     );
 

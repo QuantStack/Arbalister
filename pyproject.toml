@@ -188,7 +188,7 @@ cmd = "biome check --write --error-on-warnings"
 description = "Check JS/TS/CSS code with biome."
 
 [tool.pixi.feature.test.tasks.check-typescript]
-cmd = "npx --no tsc --noEmit"
+cmd = "npx --no tsc --noEmit && echo Typescript OK"
 description = "Check TS code with typescript."
 
 [tool.pixi.feature.test.tasks.check-typos]

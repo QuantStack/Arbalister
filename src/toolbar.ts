@@ -7,15 +7,16 @@ import { Widget } from "@lumino/widgets";
 import type { ITranslator } from "@jupyterlab/translation";
 import type { Message } from "@lumino/messaging";
 
-import { FileType } from "./filetypes";
+import { FileType } from "./file-types";
 import type {
   CsvFileInfo,
-  CsvOptions,
-  FileInfo,
-  FileOptions,
+  CsvReadOptions,
+  FileInfoFor,
+  FileReadOptions,
+  FileReadOptionsFor,
   SqliteFileInfo,
-  SqliteOptions,
-} from "./file_options";
+  SqliteReadOptions,
+} from "./file-options";
 import type { ArrowGridViewer } from "./widget";
 
 /**
@@ -28,7 +29,7 @@ abstract class DropdownToolbar extends Widget {
     this.addClass("arrow-viewer-toolbar");
   }
 
-  abstract get fileOptions(): FileOptions;
+  abstract get fileOptions(): FileReadOptions;
 
   get selectNode(): HTMLSelectElement {
     return this.node.getElementsByTagName("select")![0];
@@ -47,7 +48,7 @@ abstract class DropdownToolbar extends Widget {
   handleEvent(event: Event): void {
     switch (event.type) {
       case "change":
-        this._gridViewer.updateFileOptions(this.fileOptions);
+        this._gridViewer.updateFileReadOptions(this.fileOptions);
         break;
       default:
         break;
@@ -73,14 +74,14 @@ export namespace CsvToolbar {
 }
 
 export class CsvToolbar extends DropdownToolbar {
-  constructor(options: CsvToolbar.Options, fileOptions: CsvOptions, fileInfo: CsvFileInfo) {
+  constructor(options: CsvToolbar.Options, fileOptions: CsvReadOptions, fileInfo: CsvFileInfo) {
     super(
       options.gridViewer,
       Private.createDelimiterNode(fileOptions.delimiter, fileInfo.delimiters, options.translator),
     );
   }
 
-  get fileOptions(): CsvOptions {
+  get fileOptions(): CsvReadOptions {
     return {
       delimiter: this.selectNode.value,
     };
@@ -97,7 +98,7 @@ export namespace SqliteToolbar {
 export class SqliteToolbar extends DropdownToolbar {
   constructor(
     options: SqliteToolbar.Options,
-    fileOptions: SqliteOptions,
+    fileOptions: SqliteReadOptions,
     fileInfo: SqliteFileInfo,
   ) {
     super(
@@ -106,7 +107,7 @@ export class SqliteToolbar extends DropdownToolbar {
     );
   }
 
-  get fileOptions(): SqliteOptions {
+  get fileOptions(): SqliteReadOptions {
     return {
       table_name: this.selectNode.value,
     };
@@ -123,18 +124,23 @@ export interface ToolbarOptions {
 
 /**
  * Factory function to create the appropriate toolbar for a given file type.
+ * Type-safe overloads ensure the correct options and info types are used.
  */
-export function createToolbar(
-  fileType: FileType,
+export function createToolbar<T extends FileType>(
+  fileType: T,
   options: ToolbarOptions,
-  fileOptions: FileOptions,
-  fileInfo: FileInfo,
+  fileOptions: FileReadOptionsFor<T>,
+  fileInfo: FileInfoFor<T>,
 ): Widget | null {
   switch (fileType) {
     case FileType.Csv:
-      return new CsvToolbar(options, fileOptions as CsvOptions, fileInfo as CsvFileInfo);
+      return new CsvToolbar(options, fileOptions as CsvReadOptions, fileInfo as CsvFileInfo);
     case FileType.Sqlite:
-      return new SqliteToolbar(options, fileOptions as SqliteOptions, fileInfo as SqliteFileInfo);
+      return new SqliteToolbar(
+        options,
+        fileOptions as SqliteReadOptions,
+        fileInfo as SqliteFileInfo,
+      );
     default:
       return null;
   }

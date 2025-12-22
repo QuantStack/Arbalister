@@ -18,36 +18,38 @@ import arbalister.file_format as ff
     params=[
         (ff.FileFormat.Avro, arb.routes.Empty()),
         (ff.FileFormat.Csv, arb.routes.Empty()),
-        (ff.FileFormat.Csv, arb.routes.CsvOptions(delimiter=";")),
+        (ff.FileFormat.Csv, arb.routes.CsvReadOptions(delimiter=";")),
         (ff.FileFormat.Ipc, arb.routes.Empty()),
         (ff.FileFormat.Orc, arb.routes.Empty()),
         (ff.FileFormat.Parquet, arb.routes.Empty()),
         (ff.FileFormat.Sqlite, arb.routes.Empty()),
-        (ff.FileFormat.Sqlite, arb.routes.SqliteOptions(table_name="dummy_table_2")),
+        (ff.FileFormat.Sqlite, arb.routes.SqliteReadOptions(table_name="dummy_table_2")),
     ],
     ids=lambda f_p: f"{f_p[0].value}-{dataclasses.asdict(f_p[1])}",
     scope="module",
 )
-def file_format_and_params(request: pytest.FixtureRequest) -> tuple[ff.FileFormat, arb.routes.FileOptions]:
+def file_format_and_params(
+    request: pytest.FixtureRequest,
+) -> tuple[ff.FileFormat, arb.routes.FileReadOptions]:
     """Parametrize the file format and file parameters used in the tests.
 
     This is used to to build test cases with a give set of parameters since each file format may be tested
     with a different number of parameters.
     """
-    out: tuple[ff.FileFormat, arb.routes.FileOptions] = request.param
+    out: tuple[ff.FileFormat, arb.routes.FileReadOptions] = request.param
     return out
 
 
 @pytest.fixture(scope="module")
-def file_format(file_format_and_params: tuple[ff.FileFormat, arb.routes.FileOptions]) -> ff.FileFormat:
+def file_format(file_format_and_params: tuple[ff.FileFormat, arb.routes.FileReadOptions]) -> ff.FileFormat:
     """Extract the the file format fixture value used in the tests."""
     return file_format_and_params[0]
 
 
 @pytest.fixture(scope="module")
 def file_params(
-    file_format_and_params: tuple[ff.FileFormat, arb.routes.FileOptions],
-) -> arb.routes.FileOptions:
+    file_format_and_params: tuple[ff.FileFormat, arb.routes.FileReadOptions],
+) -> arb.routes.FileReadOptions:
     """Extract the the file parameters fixture value used in the tests."""
     return file_format_and_params[1]
 
@@ -82,7 +84,7 @@ def dummy_table_2(num_rows: int = 13) -> pa.Table:
 @pytest.fixture(scope="module")
 def full_table(file_params: ff.FileFormat, dummy_table_1: pa.Table, dummy_table_2: pa.Table) -> pa.Table:
     """Return the full table on which we are executed queries."""
-    if isinstance(file_params, arb.routes.SqliteOptions):
+    if isinstance(file_params, arb.routes.SqliteReadOptions):
         return {
             "dummy_table_1": dummy_table_1,
             "dummy_table_2": dummy_table_2,
@@ -96,7 +98,7 @@ def table_file(
     dummy_table_1: pa.Table,
     dummy_table_2: pa.Table,
     file_format: ff.FileFormat,
-    file_params: arb.routes.FileOptions,
+    file_params: arb.routes.FileReadOptions,
 ) -> pathlib.Path:
     """Write the dummy table to file."""
     write_table = arb.arrow.get_table_writer(file_format)
@@ -162,7 +164,7 @@ async def test_ipc_route_limit(
     full_table: pa.Table,
     table_file: pathlib.Path,
     ipc_params: arb.routes.IpcParams,
-    file_params: arb.routes.SqliteOptions,
+    file_params: arb.routes.FileReadOptions,
     file_format: ff.FileFormat,
 ) -> None:
     """Test fetching a file returns the limited rows and columns in IPC."""
@@ -204,7 +206,7 @@ async def test_stats_route(
     jp_fetch: JpFetch,
     full_table: pa.Table,
     table_file: pathlib.Path,
-    file_params: arb.routes.SqliteOptions,
+    file_params: arb.routes.FileReadOptions,
     file_format: ff.FileFormat,
 ) -> None:
     """Test fetching a file returns the correct metadata in Json."""
@@ -242,15 +244,15 @@ async def test_file_info_route_sqlite(
 
     payload = json.loads(response.body)
     info = payload["info"]
-    read_params = payload["read_params"]
+    default_options = payload["default_options"]
 
     match file_format:
         case ff.FileFormat.Csv:
             assert isinstance(info["delimiters"], list)
             assert "," in info["delimiters"]
-            assert read_params["delimiter"] == info["delimiters"][0]
+            assert default_options["delimiter"] == info["delimiters"][0]
         case ff.FileFormat.Sqlite:
             assert isinstance(info["table_names"], list)
             assert "dummy_table_1" in info["table_names"]
             assert "dummy_table_2" in info["table_names"]
-            assert read_params["table_name"] == info["table_names"][0]
+            assert default_options["table_name"] == info["table_names"][0]

@@ -1,15 +1,27 @@
 import { tableFromIPC } from "apache-arrow";
 import type * as Arrow from "apache-arrow";
 
-import type { FileInfo, FileOptions } from "./file_options";
+import type { FileInfo, FileInfoFor, FileReadOptions, FileReadOptionsFor } from "./file-options";
+import type { FileType } from "./file-types";
 
 export interface FileInfoOptions {
   path: string;
 }
 
+/**
+ * Type-safe file info response for a specific file type.
+ */
+export interface FileInfoResponseFor<T extends FileType> {
+  info: FileInfoFor<T>;
+  default_options: FileReadOptionsFor<T>;
+}
+
+/**
+ * Generic file info response (union of all file types).
+ */
 export interface FileInfoResponse {
   info: FileInfo;
-  read_params: FileOptions;
+  default_options: FileReadOptions;
 }
 
 export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<FileInfoResponse> {
@@ -21,6 +33,11 @@ export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<
 export interface StatsOptions {
   path: string;
 }
+
+/**
+ * Type-safe stats options for a specific file type.
+ */
+export type StatsOptionsFor<T extends FileType> = StatsOptions & FileReadOptionsFor<T>;
 
 interface SchemaInfo {
   data: string;
@@ -48,7 +65,7 @@ type OptionalizeUnion<T> = {
 };
 
 export async function fetchStats(
-  params: Readonly<StatsOptions & FileOptions>,
+  params: Readonly<StatsOptions & FileReadOptions>,
 ): Promise<StatsResponse> {
   const queryKeys = ["path", "delimiter", "table_name"] as const;
   const queryKeyMap: Record<string, string> = {
@@ -58,7 +75,7 @@ export async function fetchStats(
   const query = new URLSearchParams();
 
   for (const key of queryKeys) {
-    const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileOptions>)[key];
+    const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileReadOptions>)[key];
     if (value !== undefined && value != null) {
       const queryKey = queryKeyMap[key] || key;
       query.set(queryKey, value.toString());
@@ -105,8 +122,13 @@ export interface TableOptions {
   col_chunk?: number;
 }
 
+/**
+ * Type-safe table options for a specific file type.
+ */
+export type TableOptionsFor<T extends FileType> = TableOptions & FileReadOptionsFor<T>;
+
 export async function fetchTable(
-  params: Readonly<TableOptions & FileOptions>,
+  params: Readonly<TableOptions & FileReadOptions>,
 ): Promise<Arrow.Table> {
   const queryKeys = [
     "row_chunk_size",
@@ -120,7 +142,7 @@ export async function fetchTable(
   const query = new URLSearchParams();
 
   for (const key of queryKeys) {
-    const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileOptions>)[key];
+    const value = (params as Readonly<TableOptions> & OptionalizeUnion<FileReadOptions>)[key];
     if (value !== undefined && value != null) {
       query.set(key, value.toString());
     }
