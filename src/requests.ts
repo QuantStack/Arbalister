@@ -26,6 +26,9 @@ export interface FileInfoResponse {
 
 export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<FileInfoResponse> {
   const response = await fetch(`/file/info/${params.path}`);
+  if (!response.ok) {
+    throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
+  }
   const data: FileInfoResponse = await response.json();
   return data;
 }
@@ -83,6 +86,9 @@ export async function fetchStats(
   }
 
   const response = await fetch(`/arrow/stats/${params.path}?${query.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
+  }
   const data: StatsResponseRaw = await response.json();
 
   // Validate encoding and content type
@@ -149,5 +155,9 @@ export async function fetchTable(
   }
 
   const url = `/arrow/stream/${params.path}?${query.toString()}`;
-  return await tableFromIPC(fetch(url));
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
+  }
+  return await tableFromIPC(response);
 }
