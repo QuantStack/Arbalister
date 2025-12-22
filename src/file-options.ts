@@ -1,10 +1,10 @@
 import { FileType } from "./file-types";
 
-export interface CsvFileOptions {
+export interface CsvReadOptions {
   delimiter: string;
 }
 
-export interface SqliteFileOptions {
+export interface SqliteReadOptions {
   table_name: string;
 }
 
@@ -22,11 +22,11 @@ export interface SqliteFileInfo {
  */
 interface FileTypeRegistry {
   [FileType.Csv]: {
-    options: CsvFileOptions;
+    readOptions: CsvReadOptions;
     info: CsvFileInfo;
   };
   [FileType.Sqlite]: {
-    options: SqliteFileOptions;
+    readOptions: SqliteReadOptions;
     info: SqliteFileInfo;
   };
 }
@@ -34,8 +34,8 @@ interface FileTypeRegistry {
 /**
  * Extract the options type for a specific FileType.
  */
-export type FileOptionsFor<T extends FileType> = T extends keyof FileTypeRegistry
-  ? FileTypeRegistry[T]["options"]
+export type FileReadOptionsFor<T extends FileType> = T extends keyof FileTypeRegistry
+  ? FileTypeRegistry[T]["readOptions"]
   : never;
 
 /**
@@ -48,7 +48,7 @@ export type FileInfoFor<T extends FileType> = T extends keyof FileTypeRegistry
 /**
  * Union of all possible file options.
  */
-export type FileOptions = FileTypeRegistry[keyof FileTypeRegistry]["options"];
+export type FileReadOptions = FileTypeRegistry[keyof FileTypeRegistry]["readOptions"];
 
 /**
  * Union of all possible file info.

@@ -22,20 +22,20 @@ class Empty:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class SqliteOptions:
+class SqliteReadOptions:
     """Query parameter for the Sqlite reader."""
 
     table_name: str | None = None
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class CsvOptions:
+class CsvReadOptions:
     """Query parameter for the CSV reader."""
 
     delimiter: str | None = ","
 
 
-FileOptions = SqliteOptions | CsvOptions | Empty
+FileReadOptions = SqliteReadOptions | CsvReadOptions | Empty
 
 
 class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
@@ -66,13 +66,13 @@ class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
         """Extract query parameters into a dataclass type."""
         return params.build_dataclass(dataclass_type, self.get_query_argument)
 
-    def get_file_options(self, file_format: ff.FileFormat) -> FileOptions:
+    def get_file_options(self, file_format: ff.FileFormat) -> FileReadOptions:
         """Read the parameters associated with the relevant file format."""
         match file_format:
             case ff.FileFormat.Sqlite:
-                return self.get_query_params_as(SqliteOptions)
+                return self.get_query_params_as(SqliteReadOptions)
             case ff.FileFormat.Csv:
-                return self.get_query_params_as(CsvOptions)
+                return self.get_query_params_as(CsvReadOptions)
         return Empty()
 
 
@@ -205,8 +205,8 @@ class FileInfoResponse[I, P]:
     default_options: P
 
 
-CsvFileInfoResponse = FileInfoResponse[CsvFileInfo, CsvOptions]
-SqliteFileInfoResponse = FileInfoResponse[SqliteFileInfo, SqliteOptions]
+CsvFileInfoResponse = FileInfoResponse[CsvFileInfo, CsvReadOptions]
+SqliteFileInfoResponse = FileInfoResponse[SqliteFileInfo, SqliteReadOptions]
 
 NoFileInfoResponse = FileInfoResponse[Empty, Empty]
 
@@ -225,7 +225,7 @@ class FileInfoRouteHandler(BaseRouteHandler):
                 info = CsvFileInfo()
                 csv_response = CsvFileInfoResponse(
                     info=info,
-                    default_options=CsvOptions(delimiter=info.delimiters[0]),
+                    default_options=CsvReadOptions(delimiter=info.delimiters[0]),
                 )
                 await self.finish(dataclasses.asdict(csv_response))
             case ff.FileFormat.Sqlite:
@@ -235,7 +235,7 @@ class FileInfoRouteHandler(BaseRouteHandler):
 
                 sqlite_response = SqliteFileInfoResponse(
                     info=SqliteFileInfo(table_names=table_names),
-                    default_options=SqliteOptions(table_name=table_names[0]),
+                    default_options=SqliteReadOptions(table_name=table_names[0]),
                 )
                 await self.finish(dataclasses.asdict(sqlite_response))
             case _:
