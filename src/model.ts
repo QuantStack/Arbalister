@@ -17,7 +17,7 @@ export namespace ArrowModel {
 
 export class ArrowModel extends DataModel {
   static async fromRemoteFileInfo(loadingOptions: ArrowModel.LoadingOptions) {
-    const { info: fileInfo, read_params: fileOptions } = await fetchFileInfo({
+    const { info: fileInfo, default_options: fileOptions } = await fetchFileInfo({
       path: loadingOptions.path,
     });
     return new ArrowModel(loadingOptions, fileOptions, fileInfo);

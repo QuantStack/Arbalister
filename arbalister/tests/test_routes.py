@@ -242,15 +242,15 @@ async def test_file_info_route_sqlite(
 
     payload = json.loads(response.body)
     info = payload["info"]
-    read_params = payload["read_params"]
+    default_options = payload["default_options"]
 
     match file_format:
         case ff.FileFormat.Csv:
             assert isinstance(info["delimiters"], list)
             assert "," in info["delimiters"]
-            assert read_params["delimiter"] == info["delimiters"][0]
+            assert default_options["delimiter"] == info["delimiters"][0]
         case ff.FileFormat.Sqlite:
             assert isinstance(info["table_names"], list)
             assert "dummy_table_1" in info["table_names"]
             assert "dummy_table_2" in info["table_names"]
-            assert read_params["table_name"] == info["table_names"][0]
+            assert default_options["table_name"] == info["table_names"][0]

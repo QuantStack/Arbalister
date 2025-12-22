@@ -58,7 +58,7 @@ class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
         """
         file = self.data_file(path)
         file_format = ff.FileFormat.from_filename(file)
-        file_params = self.get_file_read_params(file_format)
+        file_params = self.get_file_options(file_format)
         read_table = abw.get_table_reader(format=file_format)
         return read_table(self.context, file, **dataclasses.asdict(file_params))
 
@@ -66,7 +66,7 @@ class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
         """Extract query parameters into a dataclass type."""
         return params.build_dataclass(dataclass_type, self.get_query_argument)
 
-    def get_file_read_params(self, file_format: ff.FileFormat) -> FileOptions:
+    def get_file_options(self, file_format: ff.FileFormat) -> FileOptions:
         """Read the parameters associated with the relevant file format."""
         match file_format:
             case ff.FileFormat.Sqlite:
@@ -202,7 +202,7 @@ class FileInfoResponse[I, P]:
     """File-specific information and defaults returned in the file info route."""
 
     info: I
-    read_params: P
+    default_options: P
 
 
 CsvFileInfoResponse = FileInfoResponse[CsvFileInfo, CsvOptions]
@@ -225,7 +225,7 @@ class FileInfoRouteHandler(BaseRouteHandler):
                 info = CsvFileInfo()
                 csv_response = CsvFileInfoResponse(
                     info=info,
-                    read_params=CsvOptions(delimiter=info.delimiters[0]),
+                    default_options=CsvOptions(delimiter=info.delimiters[0]),
                 )
                 await self.finish(dataclasses.asdict(csv_response))
             case ff.FileFormat.Sqlite:
@@ -235,11 +235,11 @@ class FileInfoRouteHandler(BaseRouteHandler):
 
                 sqlite_response = SqliteFileInfoResponse(
                     info=SqliteFileInfo(table_names=table_names),
-                    read_params=SqliteOptions(table_name=table_names[0]),
+                    default_options=SqliteOptions(table_name=table_names[0]),
                 )
                 await self.finish(dataclasses.asdict(sqlite_response))
             case _:
-                no_response = NoFileInfoResponse(info=Empty(), read_params=Empty())
+                no_response = NoFileInfoResponse(info=Empty(), default_options=Empty())
                 await self.finish(dataclasses.asdict(no_response))
 
 

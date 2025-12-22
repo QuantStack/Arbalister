@@ -13,7 +13,7 @@ export interface FileInfoOptions {
  */
 export interface FileInfoResponseFor<T extends FileType> {
   info: FileInfoFor<T>;
-  read_params: FileOptionsFor<T>;
+  default_options: FileOptionsFor<T>;
 }
 
 /**
@@ -21,7 +21,7 @@ export interface FileInfoResponseFor<T extends FileType> {
  */
 export interface FileInfoResponse {
   info: FileInfo;
-  read_params: FileOptions;
+  default_options: FileOptions;
 }
 
 export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<FileInfoResponse> {
