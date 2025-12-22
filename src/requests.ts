@@ -1,17 +1,16 @@
 import { tableFromIPC } from "apache-arrow";
 import type * as Arrow from "apache-arrow";
 
-import type { FileOptions } from "./file_options";
+import type { FileInfo, FileOptions } from "./file_options";
 
 export interface FileInfoOptions {
   path: string;
 }
 
-export interface SqliteFileInfoResponse {
-  table_names: string[];
+export interface FileInfoResponse {
+  info: FileInfo;
+  read_params: FileOptions;
 }
-
-export type FileInfoResponse = SqliteFileInfoResponse;
 
 export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<FileInfoResponse> {
   const response = await fetch(`/file/info/${params.path}`);

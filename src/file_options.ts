@@ -11,7 +11,17 @@ export interface SqliteOptions {
 }
 
 export const DEFAULT_SQLITE_OPTIONS: Required<SqliteOptions> = {
-  table_name: "sqlite_master",
+  table_name: "Table",
 };
 
 export type FileOptions = CsvOptions | SqliteOptions;
+
+export interface SqliteFileInfo {
+  table_names: string[];
+}
+
+export interface CsvFileInfo {
+  delimiters: string[];
+}
+
+export type FileInfo = SqliteFileInfo | CsvFileInfo;
