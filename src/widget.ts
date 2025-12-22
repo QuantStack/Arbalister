@@ -14,15 +14,8 @@ import type * as DataGridModule from "@lumino/datagrid";
 
 import { FileType } from "./filetypes";
 import { ArrowModel } from "./model";
-import { CsvToolbar, SqliteToolbar } from "./toolbar";
-import type {
-  CsvFileInfo,
-  CsvOptions,
-  FileInfo,
-  FileOptions,
-  SqliteFileInfo,
-  SqliteOptions,
-} from "./file_options";
+import { createToolbar } from "./toolbar";
+import type { FileInfo, FileOptions } from "./file_options";
 
 export namespace ArrowGridViewer {
   export interface Options {
@@ -215,36 +208,18 @@ export class ArrowGridViewerFactory extends ABCWidgetFactory<IDocumentWidget<Arr
 
   protected makeToolbarItems(gridViewer: ArrowGridViewer): DocumentRegistry.IToolbarItem[] {
     const ft = this.fileType(gridViewer.path);
-    if (ft?.name === FileType.Csv) {
-      return [
-        {
-          name: "arbalister:csv-toolbar",
-          widget: new CsvToolbar(
-            {
-              gridViewer,
-              translator: this.translator,
-            },
-            gridViewer.fileOptions as CsvOptions,
-            gridViewer.fileInfo as CsvFileInfo,
-          ),
-        },
-      ];
-    } else if (ft?.name === FileType.Sqlite) {
-      return [
-        {
-          name: "arbalister:sqlite-toolbar",
-          widget: new SqliteToolbar(
-            {
-              gridViewer,
-              translator: this.translator,
-            },
-            gridViewer.fileOptions as SqliteOptions,
-            gridViewer.fileInfo as SqliteFileInfo,
-          ),
-        },
-      ];
+    if (!ft) {
+      return [];
     }
-    return [];
+
+    const toolbar = createToolbar(
+      ft.name as FileType,
+      { gridViewer, translator: this.translator },
+      gridViewer.fileOptions,
+      gridViewer.fileInfo,
+    );
+
+    return toolbar ? [{ name: `arbalister:${ft.name}-toolbar`, widget: toolbar }] : [];
   }
 
   updateIcon(widget: IDocumentWidget<ArrowGridViewer>) {

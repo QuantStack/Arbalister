@@ -7,9 +7,11 @@ import { Widget } from "@lumino/widgets";
 import type { ITranslator } from "@jupyterlab/translation";
 import type { Message } from "@lumino/messaging";
 
+import { FileType } from "./filetypes";
 import type {
   CsvFileInfo,
   CsvOptions,
+  FileInfo,
   FileOptions,
   SqliteFileInfo,
   SqliteOptions,
@@ -111,7 +113,49 @@ export class SqliteToolbar extends DropdownToolbar {
   }
 }
 
+/**
+ * Common options for toolbar creation.
+ */
+export interface ToolbarOptions {
+  gridViewer: ArrowGridViewer;
+  translator?: ITranslator;
+}
+
+/**
+ * Factory function to create the appropriate toolbar for a given file type.
+ */
+export function createToolbar(
+  fileType: FileType,
+  options: ToolbarOptions,
+  fileOptions: FileOptions,
+  fileInfo: FileInfo,
+): Widget | null {
+  switch (fileType) {
+    case FileType.Csv:
+      return new CsvToolbar(options, fileOptions as CsvOptions, fileInfo as CsvFileInfo);
+    case FileType.Sqlite:
+      return new SqliteToolbar(options, fileOptions as SqliteOptions, fileInfo as SqliteFileInfo);
+    default:
+      return null;
+  }
+}
+
 namespace Private {
+  /**
+   * Create a labeled dropdown node with items.
+   */
+  function createLabeledDropdown(
+    label: string,
+    items: string[],
+    selected: string,
+    translator?: ITranslator,
+  ): HTMLElement {
+    translator = translator || nullTranslator;
+    const trans = translator?.load("jupyterlab");
+    const options: [string, string][] = items.map((item) => [item, item]);
+    return createDropdownNode(trans.__(label), options, selected);
+  }
+
   /**
    * Create the node for the delimiter switcher.
    */
@@ -120,10 +164,7 @@ namespace Private {
     delimiters: string[],
     translator?: ITranslator,
   ): HTMLElement {
-    translator = translator || nullTranslator;
-    const trans = translator?.load("jupyterlab");
-    const delimiters_map: [string, string][] = delimiters.map((d) => [d, d]);
-    return createDropdownNode(trans.__("Delimiter: "), delimiters_map, selected);
+    return createLabeledDropdown("Delimiter: ", delimiters, selected, translator);
   }
 
   /**
@@ -134,10 +175,7 @@ namespace Private {
     table_names: string[],
     translator?: ITranslator,
   ): HTMLElement {
-    translator = translator || nullTranslator;
-    const trans = translator?.load("jupyterlab");
-    const table_names_map: [string, string][] = table_names.map((d) => [d, d]);
-    return createDropdownNode(trans.__("Table: "), table_names_map, selected);
+    return createLabeledDropdown("Table: ", table_names, selected, translator);
   }
 
   /**
