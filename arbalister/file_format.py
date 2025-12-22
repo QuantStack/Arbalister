@@ -30,6 +30,6 @@ class FileFormat(enum.StrEnum):
         match file_type:
             case "ipc" | "feather":
                 return cls.Ipc
-            case "sqlite3" | "db" | ".db3", ".s3db", ".sl3":
+            case "sqlite3" | "db" | "db3" | "s3db" | "sl3":
                 return cls.Sqlite
         raise ValueError(f"Unknown file type {file_type}")
