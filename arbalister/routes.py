@@ -194,7 +194,7 @@ class CsvFileInfo:
     delimiters: list[str] = dataclasses.field(default_factory=lambda: [",", ";", "\\t", "|", "#"])
 
 
-FileInfo = SqliteFileInfo
+FileInfo = SqliteFileInfo | CsvFileInfo
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
