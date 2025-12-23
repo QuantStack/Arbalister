@@ -12,6 +12,7 @@ export namespace ArrowModel {
     rowChunkSize?: number;
     colChunkSize?: number;
     loadingRepr?: string;
+    nullRepr?: string;
   }
 }
 
@@ -34,6 +35,7 @@ export class ArrowModel extends DataModel {
       rowChunkSize: 512,
       colChunkSize: 24,
       loadingRepr: "",
+      nullRepr: "",
       ...loadingOptions,
     };
     this._fileOptions = fileOptions;
@@ -120,7 +122,8 @@ export class ArrowModel extends DataModel {
       // We have data
       const row_idx_in_chunk = row % this._loadingParams.rowChunkSize;
       const col_idx_in_chunk = col % this._loadingParams.colChunkSize;
-      const out = chunk.getChildAt(col_idx_in_chunk)?.get(row_idx_in_chunk).toString();
+      const val = chunk.getChildAt(col_idx_in_chunk)?.get(row_idx_in_chunk);
+      const out = val?.toString() || this._loadingParams.nullRepr;
 
       // Prefetch next chunks only once we have data for the current chunk.
       // We chain the Promise because this can be considered a low priority operation so we want
