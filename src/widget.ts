@@ -1,4 +1,5 @@
 import { Dialog, showDialog } from "@jupyterlab/apputils";
+import { ActivityMonitor } from "@jupyterlab/coreutils";
 import { ABCWidgetFactory, DocumentWidget } from "@jupyterlab/docregistry";
 import { PromiseDelegate } from "@lumino/coreutils";
 import {
@@ -19,14 +20,14 @@ import type { FileInfo, FileReadOptions } from "./file-options";
 
 export namespace ArrowGridViewer {
   export interface Options {
-    path: string;
+    context: DocumentRegistry.Context;
   }
 }
 
 export class ArrowGridViewer extends Panel {
   constructor(options: ArrowGridViewer.Options) {
     super();
-    this._options = options;
+    this._context = options.context;
 
     this.addClass("arrow-viewer");
 
@@ -63,7 +64,7 @@ export class ArrowGridViewer extends Panel {
   }
 
   get path(): string {
-    return this._options.path;
+    return this._context.path;
   }
 
   private get dataModel(): ArrowModel {
@@ -112,6 +113,13 @@ export class ArrowGridViewer extends Panel {
     this._defaultStyle = DataGrid.defaultStyle;
     await this._updateGrid();
     this._revealed.resolve(undefined);
+    // Throttle the rendering rate of the widget.
+    const RENDER_TIMEOUT = 10000;
+    this._monitor = new ActivityMonitor({
+      signal: this._context.model.contentChanged,
+      timeout: RENDER_TIMEOUT,
+    });
+    this._monitor.activityStopped.connect(this._updateGrid, this);
   }
 
   private async _updateGrid() {
@@ -157,8 +165,9 @@ export class ArrowGridViewer extends Panel {
     });
   }
 
-  private _options: ArrowGridViewer.Options;
   private _grid: DataGridModule.DataGrid;
+  private _context: DocumentRegistry.Context;
+  private _monitor: ActivityMonitor<DocumentRegistry.IModel, void> | null = null;
   private _revealed = new PromiseDelegate<void>();
   private _ready: Promise<void>;
   private _baseRenderer: ITextRenderConfig | null = null;
@@ -174,14 +183,10 @@ export namespace ArrowGridDocumentWidget {
 export class ArrowGridDocumentWidget extends DocumentWidget<ArrowGridViewer> {
   constructor(options: ArrowGridDocumentWidget.IOptions) {
     let { content, context, reveal, ...other } = options;
-    content = content || ArrowGridDocumentWidget._createContent(context.path);
+    content = content || new ArrowGridViewer({ context });
     reveal = Promise.all([reveal, content.ready, content.revealed, context.ready]);
     super({ content, context, reveal, ...other });
     this.addClass("arrow-viewer-base");
-  }
-
-  private static _createContent(path: string): ArrowGridViewer {
-    return new ArrowGridViewer({ path });
   }
 }
 
