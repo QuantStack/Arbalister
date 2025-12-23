@@ -55,7 +55,7 @@ export class ArrowGridViewer extends Panel {
   }
 
   get ready(): Promise<void> {
-    return this._ready;
+    return this._ready.then(() => this.dataModel.ready);
   }
 
   get revealed(): Promise<void> {
