@@ -8,14 +8,59 @@ import {
   DataGrid,
   TextRenderer,
 } from "@lumino/datagrid";
+import { ConflatableMessage, MessageLoop } from "@lumino/messaging";
+import { Debouncer } from "@lumino/polling";
 import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
+import type { ISignal } from "@lumino/signaling";
+import type { ScrollBar } from "@lumino/widgets";
 
 import { FileType } from "./file-types";
 import { ArrowModel } from "./model";
 import { createToolbar } from "./toolbar";
 import type { FileInfo, FileReadOptions } from "./file-options";
+
+/* grid: DataGrid instance */
+
+function installDebouncedScrollBarHook(grid: DataGrid, delay = 100) {
+  // Access the internal vertical scrollbar and its thumbMoved signal
+  // biome-ignore lint/suspicious/noExplicitAny: Hacking into private property
+  const vScrollBar = (grid as any)._vScrollBar as ScrollBar;
+  // biome-ignore lint/suspicious/noExplicitAny: Hacking into private property
+  const thumbMoved = (vScrollBar as any).thumbMoved as ISignal<ScrollBar, void>;
+
+  // Get the original handler method from the grid
+  // biome-ignore lint/suspicious/noExplicitAny: Hacking into private property
+  const originalHandler = (grid as any)._onThumbMoved as (sender: ScrollBar) => void;
+
+  // Disconnect the original handler
+  thumbMoved.disconnect(originalHandler, grid);
+
+  // Create a debouncer that posts the scroll request after the delay
+  // The debouncer ensures the last event is always processed
+  const debouncer = new Debouncer(() => {
+    MessageLoop.postMessage(grid.viewport, new ConflatableMessage("scroll-request"));
+  }, delay);
+
+  // Handler that invokes the debouncer on each thumb move
+  const debouncedHandler = () => {
+    void debouncer.invoke();
+  };
+
+  // Connect our debounced handler
+  thumbMoved.connect(debouncedHandler);
+
+  // Return cleanup function
+  return () => {
+    // Disconnect our handler
+    thumbMoved.disconnect(debouncedHandler);
+    // Reconnect the original handler
+    thumbMoved.connect(originalHandler, grid);
+    // Dispose the debouncer
+    debouncer.dispose();
+  };
+}
 
 export namespace ArrowGridViewer {
   export interface Options {
@@ -51,6 +96,9 @@ export class ArrowGridViewer extends Panel {
     };
 
     this.addWidget(this._grid);
+
+    installDebouncedScrollBarHook(this._grid, 100);
+
     this._ready = this.initialize();
   }
 
