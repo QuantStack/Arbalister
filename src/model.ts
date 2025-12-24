@@ -170,13 +170,20 @@ export class ArrowModel extends DataModel {
 
   private emitChangedChunk(chunkIdx: ChunkMap.ChunkIdx) {
     const { chunkRowIdx, chunkColIdx } = chunkIdx;
+
+    // We must ensure the range is within the bounds
+    const rowStart = chunkRowIdx * this._loadingParams.rowChunkSize;
+    const rowEnd = Math.min(rowStart + this._loadingParams.rowChunkSize, this._numRows);
+    const colStart = chunkColIdx * this._loadingParams.colChunkSize;
+    const colEnd = Math.min(colStart + this._loadingParams.colChunkSize, this._numCols);
+
     this.emitChanged({
       type: "cells-changed",
       region: "body",
-      row: chunkRowIdx * this._loadingParams.rowChunkSize,
-      rowSpan: this._loadingParams.rowChunkSize,
-      column: chunkColIdx * this._loadingParams.colChunkSize,
-      columnSpan: this._loadingParams.colChunkSize,
+      row: rowStart,
+      rowSpan: rowEnd - rowStart,
+      column: colStart,
+      columnSpan: colEnd - colStart,
     });
   }
 
