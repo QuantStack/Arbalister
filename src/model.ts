@@ -110,10 +110,10 @@ export class ArrowModel extends DataModel {
   }
 
   private dataBody(row: number, col: number): string {
-    const chunk_idx = this.chunkIdx(row, col);
+    const chunkIdx = this.chunkIdx(row, col);
 
-    if (this._chunks.has(chunk_idx)) {
-      const chunk = this._chunks.get(chunk_idx)!;
+    if (this._chunks.has(chunkIdx)) {
+      const chunk = this._chunks.get(chunkIdx)!;
       if (chunk instanceof Promise) {
         // Wait for Promise to complete and mark data as modified
         return this._loadingParams.loadingRepr;
@@ -128,9 +128,9 @@ export class ArrowModel extends DataModel {
       // Prefetch next chunks only once we have data for the current chunk.
       // We chain the Promise because this can be considered a low priority operation so we want
       // to reduce load on the server
-      const [row_chunk, col_chunk] = chunk_idx;
-      this.prefetchChunkIfNeeded([row_chunk + 1, col_chunk]).then((_) => {
-        this.prefetchChunkIfNeeded([row_chunk, col_chunk + 1]);
+      const [rowChunk, colChunk] = chunkIdx;
+      this.prefetchChunkIfNeeded([rowChunk + 1, colChunk]).then((_) => {
+        this.prefetchChunkIfNeeded([rowChunk, colChunk + 1]);
       });
 
       return out;
@@ -138,34 +138,34 @@ export class ArrowModel extends DataModel {
 
     // Fetch data, however we cannot await it due to the interface required by the DataGrid.
     // Instead, we fire the request, and notify of change upon completion.
-    const promise = this.fetchChunk(chunk_idx).then((table) => {
-      this._chunks.set(chunk_idx, table);
-      this.emitChangedChunk(chunk_idx);
+    const promise = this.fetchChunk(chunkIdx).then((table) => {
+      this._chunks.set(chunkIdx, table);
+      this.emitChangedChunk(chunkIdx);
     });
-    this._chunks.set(chunk_idx, promise);
+    this._chunks.set(chunkIdx, promise);
 
     return this._loadingParams.loadingRepr;
   }
 
-  private async fetchChunk(chunk_idx: [number, number]) {
-    const [row_chunk, col_chunk] = chunk_idx;
+  private async fetchChunk(chunkIdx: [number, number]) {
+    const [rowChunk, colChunk] = chunkIdx;
     return await fetchTable({
       path: this._loadingParams.path,
       row_chunk_size: this._loadingParams.rowChunkSize,
-      row_chunk: row_chunk,
+      row_chunk: rowChunk,
       col_chunk_size: this._loadingParams.colChunkSize,
-      col_chunk: col_chunk,
+      col_chunk: colChunk,
       ...this._fileOptions,
     });
   }
 
-  private emitChangedChunk(chunk_idx: [number, number]) {
-    const [row_chunk, col_chunk] = chunk_idx;
+  private emitChangedChunk(chunkIdx: [number, number]) {
+    const [rowChunk, colChunk] = chunkIdx;
 
     // We must ensure the range is within the bounds
-    const rowStart = row_chunk * this._loadingParams.rowChunkSize;
+    const rowStart = rowChunk * this._loadingParams.rowChunkSize;
     const rowEnd = Math.min(rowStart + this._loadingParams.rowChunkSize, this._numRows);
-    const colStart = col_chunk * this._loadingParams.colChunkSize;
+    const colStart = colChunk * this._loadingParams.colChunkSize;
     const colEnd = Math.min(colStart + this._loadingParams.colChunkSize, this._numCols);
 
     this.emitChanged({
@@ -178,15 +178,15 @@ export class ArrowModel extends DataModel {
     });
   }
 
-  private async prefetchChunkIfNeeded(chunk_idx: [number, number]) {
-    if (this._chunks.has(chunk_idx) || !this.chunkIsValid(chunk_idx)) {
+  private async prefetchChunkIfNeeded(chunkIdx: [number, number]) {
+    if (this._chunks.has(chunkIdx) || !this.chunkIsValid(chunkIdx)) {
       return;
     }
 
-    const promise = this.fetchChunk(chunk_idx).then((table) => {
-      this._chunks.set(chunk_idx, table);
+    const promise = this.fetchChunk(chunkIdx).then((table) => {
+      this._chunks.set(chunkIdx, table);
     });
-    this._chunks.set(chunk_idx, promise);
+    this._chunks.set(chunkIdx, promise);
   }
 
   private chunkIdx(row: number, col: number): [number, number] {
@@ -196,12 +196,10 @@ export class ArrowModel extends DataModel {
     ];
   }
 
-  private chunkIsValid(chunk_idx: [number, number]): boolean {
-    const [row_chunk, col_chunk] = chunk_idx;
-    const [max_row_chunk, max_col_chunk] = this.chunkIdx(this._numRows - 1, this._numCols - 1);
-    return (
-      row_chunk >= 0 && row_chunk <= max_row_chunk && col_chunk >= 0 && col_chunk <= max_col_chunk
-    );
+  private chunkIsValid(chunkIdx: [number, number]): boolean {
+    const [rowChunk, colChunk] = chunkIdx;
+    const [max_rowChunk, max_colChunk] = this.chunkIdx(this._numRows - 1, this._numCols - 1);
+    return rowChunk >= 0 && rowChunk <= max_rowChunk && colChunk >= 0 && colChunk <= max_colChunk;
   }
 
   private readonly _loadingParams: Required<ArrowModel.LoadingOptions>;
