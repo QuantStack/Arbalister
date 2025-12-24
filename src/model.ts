@@ -45,16 +45,20 @@ export class ArrowModel extends DataModel {
   }
 
   protected async initialize(): Promise<void> {
-    const [stats, chunk00] = await Promise.all([
-      fetchStats({ path: this._loadingParams.path, ...this._fileOptions }),
-      this.fetchChunk([0, 0]),
-    ]);
-
+    const stats = await fetchStats({ path: this._loadingParams.path, ...this._fileOptions });
     this._schema = stats.schema;
     this._numCols = stats.num_cols;
     this._numRows = stats.num_rows;
-    this._chunks = new PairMap();
-    this._chunks.set([0, 0], chunk00);
+    this._chunks = new ChunkMap({
+      rowChunkSize: this._loadingParams.rowChunkSize,
+      numRows: this._numRows,
+      colChunkSize: this._loadingParams.colChunkSize,
+      numCols: this._numCols,
+    });
+
+    const chunkIdx00 = this._chunks.getChunkIdx({ rowIdx: 0, colIdx: 0 });
+    const chunk00 = await this.fetchChunk(chunkIdx00);
+    this._chunks.set(chunkIdx00, chunk00);
   }
 
   get fileInfo(): Readonly<FileInfo> {
@@ -110,7 +114,7 @@ export class ArrowModel extends DataModel {
   }
 
   private dataBody(row: number, col: number): string {
-    const chunkIdx = this.chunkIdx(row, col);
+    const chunkIdx = this._chunks.getChunkIdx({ rowIdx: row, colIdx: col });
 
     if (this._chunks.has(chunkIdx)) {
       const chunk = this._chunks.get(chunkIdx)!;
@@ -128,9 +132,9 @@ export class ArrowModel extends DataModel {
       // Prefetch next chunks only once we have data for the current chunk.
       // We chain the Promise because this can be considered a low priority operation so we want
       // to reduce load on the server
-      const [rowChunk, colChunk] = chunkIdx;
-      this.prefetchChunkIfNeeded([rowChunk + 1, colChunk]).then((_) => {
-        this.prefetchChunkIfNeeded([rowChunk, colChunk + 1]);
+      const { chunkRowIdx, chunkColIdx } = chunkIdx;
+      this.prefetchChunkIfNeeded({ chunkRowIdx: chunkRowIdx + 1, chunkColIdx }).then((_) => {
+        this.prefetchChunkIfNeeded({ chunkRowIdx, chunkColIdx: chunkColIdx + 1 });
       });
 
       return out;
@@ -147,44 +151,37 @@ export class ArrowModel extends DataModel {
     return this._loadingParams.loadingRepr;
   }
 
-  private async fetchChunk(chunkIdx: [number, number]): Promise<Chunk> {
-    const [rowChunk, colChunk] = chunkIdx;
+  private async fetchChunk(chunkIdx: ChunkMap.ChunkIdx): Promise<ChunkMap.Chunk> {
+    const { chunkRowIdx, chunkColIdx } = chunkIdx;
     const table = await fetchTable({
       path: this._loadingParams.path,
       row_chunk_size: this._loadingParams.rowChunkSize,
-      row_chunk: rowChunk,
+      row_chunk: chunkRowIdx,
       col_chunk_size: this._loadingParams.colChunkSize,
-      col_chunk: colChunk,
+      col_chunk: chunkColIdx,
       ...this._fileOptions,
     });
     return {
       data: table,
-      startRow: rowChunk * this._loadingParams.rowChunkSize,
-      startCol: colChunk * this._loadingParams.colChunkSize,
+      startRow: chunkRowIdx * this._loadingParams.rowChunkSize,
+      startCol: chunkColIdx * this._loadingParams.colChunkSize,
     };
   }
 
-  private emitChangedChunk(chunkIdx: [number, number]) {
-    const [rowChunk, colChunk] = chunkIdx;
-
-    // We must ensure the range is within the bounds
-    const rowStart = rowChunk * this._loadingParams.rowChunkSize;
-    const rowEnd = Math.min(rowStart + this._loadingParams.rowChunkSize, this._numRows);
-    const colStart = colChunk * this._loadingParams.colChunkSize;
-    const colEnd = Math.min(colStart + this._loadingParams.colChunkSize, this._numCols);
-
+  private emitChangedChunk(chunkIdx: ChunkMap.ChunkIdx) {
+    const { chunkRowIdx, chunkColIdx } = chunkIdx;
     this.emitChanged({
       type: "cells-changed",
       region: "body",
-      row: rowStart,
-      rowSpan: rowEnd - rowStart,
-      column: colStart,
-      columnSpan: colEnd - colStart,
+      row: chunkRowIdx * this._loadingParams.rowChunkSize,
+      rowSpan: this._loadingParams.rowChunkSize,
+      column: chunkColIdx * this._loadingParams.colChunkSize,
+      columnSpan: this._loadingParams.colChunkSize,
     });
   }
 
-  private async prefetchChunkIfNeeded(chunkIdx: [number, number]) {
-    if (this._chunks.has(chunkIdx) || !this.chunkIsValid(chunkIdx)) {
+  private async prefetchChunkIfNeeded(chunkIdx: ChunkMap.ChunkIdx) {
+    if (this._chunks.has(chunkIdx) || !this._chunks.chunkIsValid(chunkIdx)) {
       return;
     }
 
@@ -194,19 +191,6 @@ export class ArrowModel extends DataModel {
     this._chunks.set(chunkIdx, promise);
   }
 
-  private chunkIdx(row: number, col: number): [number, number] {
-    return [
-      Math.floor(row / this._loadingParams.rowChunkSize),
-      Math.floor(col / this._loadingParams.colChunkSize),
-    ];
-  }
-
-  private chunkIsValid(chunkIdx: [number, number]): boolean {
-    const [rowChunk, colChunk] = chunkIdx;
-    const [max_rowChunk, max_colChunk] = this.chunkIdx(this._numRows - 1, this._numCols - 1);
-    return rowChunk >= 0 && rowChunk <= max_rowChunk && colChunk >= 0 && colChunk <= max_colChunk;
-  }
-
   private readonly _loadingParams: Required<ArrowModel.LoadingOptions>;
   private readonly _fileInfo: FileInfo;
   private _fileOptions: FileReadOptions;
@@ -214,12 +198,106 @@ export class ArrowModel extends DataModel {
   private _numRows: number = 0;
   private _numCols: number = 0;
   private _schema!: Arrow.Schema;
-  private _chunks: PairMap<number, number, Chunk | Promise<void>> = new PairMap();
+  private _chunks!: ChunkMap;
   private _ready: Promise<void>;
 }
 
-interface Chunk {
-  data: Arrow.Table;
-  startRow: number;
-  startCol: number;
+export namespace ChunkMap {
+  export interface Parameters {
+    rowChunkSize: number;
+    numRows: number;
+    colChunkSize: number;
+    numCols: number;
+  }
+
+  export interface ChunkIdx {
+    chunkRowIdx: number;
+    chunkColIdx: number;
+  }
+
+  export interface Chunk {
+    data: Arrow.Table;
+    startRow: number;
+    startCol: number;
+  }
+
+  export type ChunkData = Chunk | Promise<void>;
+
+  export interface CellIdx {
+    rowIdx: number;
+    colIdx: number;
+  }
+}
+
+class ChunkMap {
+  constructor(parameters: ChunkMap.Parameters) {
+    this._parameters = parameters;
+  }
+
+  getChunkIdx(cellIdx: ChunkMap.CellIdx): ChunkMap.ChunkIdx {
+    return {
+      chunkRowIdx: Math.floor(cellIdx.rowIdx / this._parameters.rowChunkSize),
+      chunkColIdx: Math.floor(cellIdx.colIdx / this._parameters.colChunkSize),
+    };
+  }
+
+  chunkIsValid(chunkIdx: ChunkMap.ChunkIdx): boolean {
+    const { chunkRowIdx, chunkColIdx } = chunkIdx;
+    const { chunkRowIdx: maxChunkRowIdx, chunkColIdx: maxChunkColIdx } = this.getChunkIdx({
+      rowIdx: this._parameters.numRows - 1,
+      colIdx: this._parameters.numCols - 1,
+    });
+    return (
+      chunkRowIdx >= 0 &&
+      chunkRowIdx <= maxChunkRowIdx &&
+      chunkColIdx >= 0 &&
+      chunkColIdx <= maxChunkColIdx
+    );
+  }
+
+  set(chunkIdx: ChunkMap.ChunkIdx, value: ChunkMap.ChunkData): this {
+    this._map.set(ChunkMap._chunkIdxToKey(chunkIdx), value);
+    return this;
+  }
+
+  get(chunkIdx: ChunkMap.ChunkIdx): ChunkMap.ChunkData | undefined {
+    return this._map.get(ChunkMap._chunkIdxToKey(chunkIdx));
+  }
+
+  clear(): void {
+    this._map.clear();
+  }
+
+  delete(chunkIdx: ChunkMap.ChunkIdx): boolean {
+    return this._map.delete(ChunkMap._chunkIdxToKey(chunkIdx));
+  }
+
+  has(chunkIdx: ChunkMap.ChunkIdx): boolean {
+    return this._map.has(ChunkMap._chunkIdxToKey(chunkIdx));
+  }
+
+  get size(): number {
+    return this._map.size;
+  }
+
+  forEach(
+    callbackfn: (value: ChunkMap.ChunkData, key: ChunkMap.ChunkIdx, map: ChunkMap) => void,
+    // biome-ignore lint/suspicious/noExplicitAny: This is in the Map signature
+    thisArg?: any,
+  ): void {
+    this._map.forEach((value, key) => {
+      callbackfn.call(thisArg, value, ChunkMap._keyToChunkIdx(key), this);
+    });
+  }
+
+  private static _chunkIdxToKey(chunkIdx: ChunkMap.ChunkIdx): [number, number] {
+    return [chunkIdx.chunkRowIdx, chunkIdx.chunkColIdx];
+  }
+
+  private static _keyToChunkIdx(key: [number, number]): ChunkMap.ChunkIdx {
+    return { chunkRowIdx: key[0], chunkColIdx: key[1] };
+  }
+
+  private _map = new PairMap<number, number, ChunkMap.ChunkData>();
+  private _parameters: Required<ChunkMap.Parameters>;
 }
