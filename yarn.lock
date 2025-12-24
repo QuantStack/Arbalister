@@ -2846,6 +2846,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@lumino/polling@npm:^2.1.5":
+  version: 2.1.5
+  resolution: "@lumino/polling@npm:2.1.5"
+  dependencies:
+    "@lumino/coreutils": ^2.2.2
+    "@lumino/disposable": ^2.1.5
+    "@lumino/signaling": ^2.1.5
+  checksum: 2b510ef4a5ac05470f01281112d1c467ea95f9f783f702d61fe512d8efecda93f360c907eb3e9fd180f507afe79face1d0ca7878a9d844a3e1f588aba7c5a28e
+  languageName: node
+  linkType: hard
+
 "@lumino/properties@npm:^2.0.3, @lumino/properties@npm:^2.0.4":
   version: 2.0.4
   resolution: "@lumino/properties@npm:2.0.4"
@@ -3698,6 +3709,7 @@ __metadata:
     "@jupyterlab/testutils": ^4.0.0
     "@jupyterlab/ui-components": ^4.4.10
     "@lumino/datagrid": ^2.5.3
+    "@lumino/polling": ^2.1.5
     "@lumino/widgets": ^2.7.1
     "@types/jest": ^29.2.0
     "@types/json-schema": ^7.0.11
