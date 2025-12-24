@@ -120,9 +120,9 @@ export class ArrowModel extends DataModel {
       }
 
       // We have data
-      const row_idx_in_chunk = row % this._loadingParams.rowChunkSize;
-      const col_idx_in_chunk = col % this._loadingParams.colChunkSize;
-      const val = chunk.getChildAt(col_idx_in_chunk)?.get(row_idx_in_chunk);
+      const rowIdxInChunk = row - chunk.startRow;
+      const colIdxInChunk = col - chunk.startCol;
+      const val = chunk.data.getChildAt(colIdxInChunk)?.get(rowIdxInChunk);
       const out = val?.toString() || this._loadingParams.nullRepr;
 
       // Prefetch next chunks only once we have data for the current chunk.
@@ -138,8 +138,8 @@ export class ArrowModel extends DataModel {
 
     // Fetch data, however we cannot await it due to the interface required by the DataGrid.
     // Instead, we fire the request, and notify of change upon completion.
-    const promise = this.fetchChunk(chunkIdx).then((table) => {
-      this._chunks.set(chunkIdx, table);
+    const promise = this.fetchChunk(chunkIdx).then((chnk) => {
+      this._chunks.set(chunkIdx, chnk);
       this.emitChangedChunk(chunkIdx);
     });
     this._chunks.set(chunkIdx, promise);
@@ -147,9 +147,9 @@ export class ArrowModel extends DataModel {
     return this._loadingParams.loadingRepr;
   }
 
-  private async fetchChunk(chunkIdx: [number, number]) {
+  private async fetchChunk(chunkIdx: [number, number]): Promise<Chunk> {
     const [rowChunk, colChunk] = chunkIdx;
-    return await fetchTable({
+    const table = await fetchTable({
       path: this._loadingParams.path,
       row_chunk_size: this._loadingParams.rowChunkSize,
       row_chunk: rowChunk,
@@ -157,6 +157,11 @@ export class ArrowModel extends DataModel {
       col_chunk: colChunk,
       ...this._fileOptions,
     });
+    return {
+      data: table,
+      startRow: rowChunk * this._loadingParams.rowChunkSize,
+      startCol: colChunk * this._loadingParams.colChunkSize,
+    };
   }
 
   private emitChangedChunk(chunkIdx: [number, number]) {
@@ -209,6 +214,12 @@ export class ArrowModel extends DataModel {
   private _numRows: number = 0;
   private _numCols: number = 0;
   private _schema!: Arrow.Schema;
-  private _chunks: PairMap<number, number, Arrow.Table | Promise<void>> = new PairMap();
+  private _chunks: PairMap<number, number, Chunk | Promise<void>> = new PairMap();
   private _ready: Promise<void>;
+}
+
+interface Chunk {
+  data: Arrow.Table;
+  startRow: number;
+  startCol: number;
 }
