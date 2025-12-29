@@ -38,7 +38,7 @@ export class ArrowModel extends DataModel {
     super();
 
     this._loadingParams = {
-      rowChunkSize: 100,
+      rowChunkSize: 256,
       colChunkSize: 24,
       loadingRepr: "",
       nullRepr: "",
@@ -198,6 +198,10 @@ export class ArrowModel extends DataModel {
     factors: Required<ArrowModel.PrefetchFactors> = { rowPrefetchFactor: 1, colPrefetchFactor: 1 },
   ) {
     const { chunkRowIdx, chunkColIdx } = chunkIdx;
+    // If a mulitpliying factor is used, we store the chunk in multiple places so that it can
+    // be found in constant time.
+    // Since the chunk stores its start row/col it does not matter on which row the chunk starts
+    // as long as it contains the expected data.
     for (let r = 0; r < factors.rowPrefetchFactor; r++) {
       for (let c = 0; c < factors.colPrefetchFactor; c++) {
         this._chunks.set({ chunkRowIdx: chunkRowIdx + r, chunkColIdx: chunkColIdx + c }, data);
@@ -235,6 +239,8 @@ export class ArrowModel extends DataModel {
 
     let promise = Promise.resolve();
 
+    // This chunk uses the row prefetching multiplier and runs first as we estimate
+    // scrolling horizontally is more likely.
     const nextRowsChunkIdx: ChunkMap.ChunkIdx = { chunkRowIdx: chunkRowIdx + 1, chunkColIdx };
     if (!this._chunks.has(nextRowsChunkIdx) && this._chunks.chunkIsValid(nextRowsChunkIdx)) {
       const rowFactors = {
@@ -249,6 +255,8 @@ export class ArrowModel extends DataModel {
       );
     }
 
+    // This chunk uses the column prefetching multiplier and waits for the previous to complete
+    // before running to reduce load on the server.
     const nextColsChunkIdx: ChunkMap.ChunkIdx = { chunkRowIdx, chunkColIdx: chunkColIdx + 1 };
     if (!this._chunks.has(nextColsChunkIdx) && this._chunks.chunkIsValid(nextColsChunkIdx)) {
       const colFactors = {
