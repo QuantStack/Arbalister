@@ -124,32 +124,32 @@ JpFetch = Callable[..., Awaitable[tornado.httpclient.HTTPResponse]]
         # No limits
         lambda table: arb.routes.IpcParams(),
         # Limit only number of rows
-        lambda table: arb.routes.IpcParams(row_chunk=0, row_chunk_size=3),
-        lambda table: arb.routes.IpcParams(row_chunk=1, row_chunk_size=2),
-        lambda table: arb.routes.IpcParams(row_chunk=0, row_chunk_size=table.num_rows),
-        lambda table: arb.routes.IpcParams(row_chunk=1, row_chunk_size=table.num_rows // 2 + 1),
+        lambda table: arb.routes.IpcParams(start_row=0, end_row=3),
+        lambda table: arb.routes.IpcParams(start_row=2, end_row=4),
+        lambda table: arb.routes.IpcParams(start_row=0, end_row=table.num_rows),
+        lambda table: arb.routes.IpcParams(start_row=table.num_rows // 2, end_row=table.num_rows),
         # Limit only number of cols
-        lambda table: arb.routes.IpcParams(col_chunk=0, col_chunk_size=3),
-        lambda table: arb.routes.IpcParams(col_chunk=1, col_chunk_size=2),
-        lambda table: arb.routes.IpcParams(col_chunk=0, col_chunk_size=table.num_columns),
-        lambda table: arb.routes.IpcParams(col_chunk=1, col_chunk_size=table.num_columns // 2 + 1),
+        lambda table: arb.routes.IpcParams(start_col=0, end_col=3),
+        lambda table: arb.routes.IpcParams(start_col=2, end_col=4),
+        lambda table: arb.routes.IpcParams(start_col=0, end_col=table.num_columns),
+        lambda table: arb.routes.IpcParams(start_col=table.num_columns // 2, end_col=table.num_columns),
         # Limit both
         lambda table: arb.routes.IpcParams(
-            row_chunk=0,
-            row_chunk_size=3,
-            col_chunk=1,
-            col_chunk_size=table.num_columns // 2 + 1,
+            start_row=0,
+            end_row=3,
+            start_col=table.num_columns // 2,
+            end_col=table.num_columns,
         ),
         lambda table: arb.routes.IpcParams(
-            row_chunk=0,
-            row_chunk_size=table.num_rows,
-            col_chunk=1,
-            col_chunk_size=2,
+            start_row=0,
+            end_row=table.num_rows,
+            start_col=2,
+            end_col=4,
         ),
         # Schema only
         lambda table: arb.routes.IpcParams(
-            row_chunk=0,
-            row_chunk_size=0,
+            start_row=0,
+            end_row=0,
         ),
     ]
 )
@@ -185,19 +185,17 @@ async def test_ipc_route_limit(
     expected = full_table
 
     # Row slicing
-    if (size := ipc_params.row_chunk_size) is not None and (cidx := ipc_params.row_chunk) is not None:
-        expected_num_rows = min((size * (cidx + 1)), expected.num_rows) - (size * cidx)
+    if (start_row := ipc_params.start_row) is not None and (end_row := ipc_params.end_row) is not None:
+        expected_num_rows = min(end_row, expected.num_rows) - start_row
         assert payload.num_rows == expected_num_rows
-        expected = expected.slice(cidx * size, size)
+        expected = expected.slice(start_row, end_row - start_row)
 
     # Col slicing
-    if (size := ipc_params.col_chunk_size) is not None and (cidx := ipc_params.col_chunk) is not None:
-        expected_num_cols = min((size * (cidx + 1)), len(expected.schema)) - (size * cidx)
+    if (start_col := ipc_params.start_col) is not None and (end_col := ipc_params.end_col) is not None:
+        expected_num_cols = min(end_col, len(expected.schema)) - start_col
         assert len(payload.schema) == expected_num_cols
         col_names = expected.schema.names
-        start = cidx * size
-        end = start + size
-        expected = expected.select(col_names[start:end])
+        expected = expected.select(col_names[start_col:end_col])
 
     assert expected.cast(payload.schema) == payload
 

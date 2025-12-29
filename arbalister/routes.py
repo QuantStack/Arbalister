@@ -80,10 +80,10 @@ class BaseRouteHandler(jupyter_server.base.handlers.APIHandler):
 class IpcParams:
     """Query parameter for IPC data."""
 
-    row_chunk_size: int | None = None
-    row_chunk: int | None = None
-    col_chunk_size: int | None = None
-    col_chunk: int | None = None
+    start_row: int | None = None
+    end_row: int | None = None
+    start_col: int | None = None
+    end_col: int | None = None
 
 
 class IpcRouteHandler(BaseRouteHandler):
@@ -98,15 +98,14 @@ class IpcRouteHandler(BaseRouteHandler):
 
         df: dn.DataFrame = self.dataframe(path)
 
-        if params.row_chunk_size is not None and params.row_chunk is not None:
-            offset: int = params.row_chunk * params.row_chunk_size
-            df = df.limit(count=params.row_chunk_size, offset=offset)
+        if params.start_row is not None and params.end_row is not None:
+            offset: int = params.start_row
+            count: int = params.end_row - params.start_row
+            df = df.limit(count=count, offset=offset)
 
-        if params.col_chunk_size is not None and params.col_chunk is not None:
+        if params.start_col is not None and params.end_col is not None:
             col_names = df.schema().names
-            start: int = params.col_chunk * params.col_chunk_size
-            end: int = start + params.col_chunk_size
-            df = df.select(*col_names[start:end])
+            df = df.select(*col_names[params.start_col : params.end_col])
 
         table: pa.Table = df.to_arrow_table()
 
