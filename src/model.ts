@@ -122,7 +122,7 @@ export class ArrowModel extends DataModel {
         // If it was created through a prefetch, it does emit a change so we add it.
         if (chunk.reason === "prefetch") {
           const promise = chunk.promise.then((_) => this.emitChangedChunk(chunkIdx));
-          this._chunks.set(chunkIdx, ChunkMap.makePendingChunk({ promise, reason: "query" }));
+          this.storeChunkData(chunkIdx, ChunkMap.makePendingChunk({ promise, reason: "query" }));
         }
         return this._loadingParams.loadingRepr;
       }
@@ -133,13 +133,8 @@ export class ArrowModel extends DataModel {
       const val = chunk.data.getChildAt(colIdxInChunk)?.get(rowIdxInChunk);
       const out = val?.toString() || this._loadingParams.nullRepr;
 
-      // Prefetch next chunks only once we have data for the current chunk.
-      // We chain the Promise because this can be considered a low priority operation so we want
-      // to reduce load on the server
-      const { chunkRowIdx, chunkColIdx } = chunkIdx;
-      this.prefetchChunkIfNeeded({ chunkRowIdx: chunkRowIdx + 1, chunkColIdx }).then((_) => {
-        this.prefetchChunkIfNeeded({ chunkRowIdx, chunkColIdx: chunkColIdx + 1 });
-      });
+      // Prefetch next chunks only once we have the current data to prioritize current view
+      this.prefetchAsNeededForChunk(chunkIdx);
 
       return out;
     }
@@ -147,7 +142,7 @@ export class ArrowModel extends DataModel {
     // Fetch data, however we cannot await it due to the interface required by the DataGrid.
     // Instead, we fire the request, and notify of change upon completion.
     const promise = this.fetchThenStoreChunk(chunkIdx).then((_) => this.emitChangedChunk(chunkIdx));
-    this._chunks.set(chunkIdx, ChunkMap.makePendingChunk({ promise, reason: "query" }));
+    this.storeChunkData(chunkIdx, ChunkMap.makePendingChunk({ promise, reason: "query" }));
 
     return this._loadingParams.loadingRepr;
   }
@@ -169,7 +164,11 @@ export class ArrowModel extends DataModel {
       startCol: chunkColIdx * this._loadingParams.colChunkSize,
     });
 
-    this._chunks.set(chunkIdx, chunk);
+    this.storeChunkData(chunkIdx, chunk);
+  }
+
+  private storeChunkData(chunkIdx: ChunkMap.ChunkIdx, data: ChunkMap.ChunkData) {
+    this._chunks.set(chunkIdx, data);
   }
 
   private emitChangedChunk(chunkIdx: ChunkMap.ChunkIdx) {
@@ -191,13 +190,34 @@ export class ArrowModel extends DataModel {
     });
   }
 
-  private async prefetchChunkIfNeeded(chunkIdx: ChunkMap.ChunkIdx) {
-    if (this._chunks.has(chunkIdx) || !this._chunks.chunkIsValid(chunkIdx)) {
-      return;
+  /**
+   * Prefetch next chunks if available.
+   *
+   * We chain the Promise because this can be considered a low priority operation so we want
+   * to reduce load on the server.
+   */
+  private prefetchAsNeededForChunk(chunkIdx: ChunkMap.ChunkIdx) {
+    const { chunkRowIdx, chunkColIdx } = chunkIdx;
+
+    let promise = Promise.resolve();
+
+    const nextRowsChunkIdx: ChunkMap.ChunkIdx = { chunkRowIdx: chunkRowIdx + 1, chunkColIdx };
+    if (!this._chunks.has(nextRowsChunkIdx) && this._chunks.chunkIsValid(nextRowsChunkIdx)) {
+      promise = promise.then((_) => this.fetchThenStoreChunk(nextRowsChunkIdx));
+      this.storeChunkData(
+        nextRowsChunkIdx,
+        ChunkMap.makePendingChunk({ promise, reason: "prefetch" }),
+      );
     }
 
-    const promise = this.fetchThenStoreChunk(chunkIdx);
-    this._chunks.set(chunkIdx, ChunkMap.makePendingChunk({ promise, reason: "prefetch" }));
+    const nextColsChunkIdx: ChunkMap.ChunkIdx = { chunkRowIdx, chunkColIdx: chunkColIdx + 1 };
+    if (!this._chunks.has(nextColsChunkIdx) && this._chunks.chunkIsValid(nextColsChunkIdx)) {
+      promise = promise.then((_) => this.fetchThenStoreChunk(nextColsChunkIdx));
+      this.storeChunkData(
+        nextColsChunkIdx,
+        ChunkMap.makePendingChunk({ promise, reason: "prefetch" }),
+      );
+    }
   }
 
   private readonly _loadingParams: Required<ArrowModel.LoadingOptions>;
