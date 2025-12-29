@@ -57,8 +57,7 @@ export class ArrowModel extends DataModel {
     });
 
     const chunkIdx00 = this._chunks.getChunkIdx({ rowIdx: 0, colIdx: 0 });
-    const chunk00 = await this.fetchChunk(chunkIdx00);
-    this._chunks.set(chunkIdx00, chunk00);
+    await this.fetchThenStoreChunk(chunkIdx00);
   }
 
   get fileInfo(): Readonly<FileInfo> {
@@ -123,7 +122,7 @@ export class ArrowModel extends DataModel {
         // If it was created through a prefetch, it does emit a change so we add it.
         if (chunk.reason === "prefetch") {
           const promise = chunk.promise.then((_) => this.emitChangedChunk(chunkIdx));
-          this._chunks.set(chunkIdx, { promise, reason: "query", type: "pending" });
+          this._chunks.set(chunkIdx, ChunkMap.makePendingChunk({ promise, reason: "query" }));
         }
         return this._loadingParams.loadingRepr;
       }
@@ -147,17 +146,15 @@ export class ArrowModel extends DataModel {
 
     // Fetch data, however we cannot await it due to the interface required by the DataGrid.
     // Instead, we fire the request, and notify of change upon completion.
-    const promise = this.fetchChunk(chunkIdx).then((chnk) => {
-      this._chunks.set(chunkIdx, chnk);
-      this.emitChangedChunk(chunkIdx);
-    });
-    this._chunks.set(chunkIdx, { promise, reason: "query", type: "pending" });
+    const promise = this.fetchThenStoreChunk(chunkIdx).then((_) => this.emitChangedChunk(chunkIdx));
+    this._chunks.set(chunkIdx, ChunkMap.makePendingChunk({ promise, reason: "query" }));
 
     return this._loadingParams.loadingRepr;
   }
 
-  private async fetchChunk(chunkIdx: ChunkMap.ChunkIdx): Promise<ChunkMap.Chunk> {
+  private async fetchThenStoreChunk(chunkIdx: ChunkMap.ChunkIdx): Promise<void> {
     const { chunkRowIdx, chunkColIdx } = chunkIdx;
+
     const table = await fetchTable({
       path: this._loadingParams.path,
       row_chunk_size: this._loadingParams.rowChunkSize,
@@ -166,12 +163,13 @@ export class ArrowModel extends DataModel {
       col_chunk: chunkColIdx,
       ...this._fileOptions,
     });
-    return {
+    const chunk: ChunkMap.Chunk = ChunkMap.makeChunk({
       data: table,
       startRow: chunkRowIdx * this._loadingParams.rowChunkSize,
       startCol: chunkColIdx * this._loadingParams.colChunkSize,
-      type: "chunk",
-    };
+    });
+
+    this._chunks.set(chunkIdx, chunk);
   }
 
   private emitChangedChunk(chunkIdx: ChunkMap.ChunkIdx) {
@@ -198,10 +196,8 @@ export class ArrowModel extends DataModel {
       return;
     }
 
-    const promise = this.fetchChunk(chunkIdx).then((table) => {
-      this._chunks.set(chunkIdx, table);
-    });
-    this._chunks.set(chunkIdx, { promise, reason: "prefetch", type: "pending" });
+    const promise = this.fetchThenStoreChunk(chunkIdx);
+    this._chunks.set(chunkIdx, ChunkMap.makePendingChunk({ promise, reason: "prefetch" }));
   }
 
   private readonly _loadingParams: Required<ArrowModel.LoadingOptions>;
@@ -213,40 +209,6 @@ export class ArrowModel extends DataModel {
   private _schema!: Arrow.Schema;
   private _chunks!: ChunkMap;
   private _ready: Promise<void>;
-}
-
-export namespace ChunkMap {
-  export type Parameters = {
-    rowChunkSize: number;
-    numRows: number;
-    colChunkSize: number;
-    numCols: number;
-  };
-
-  export type ChunkIdx = {
-    chunkRowIdx: number;
-    chunkColIdx: number;
-  };
-
-  export type CellIdx = {
-    rowIdx: number;
-    colIdx: number;
-  };
-
-  export type Chunk = {
-    data: Arrow.Table;
-    startRow: number;
-    startCol: number;
-    type: "chunk";
-  };
-
-  export type PendingChunk = {
-    promise: Promise<void>;
-    reason: "query" | "prefetch";
-    type: "pending";
-  };
-
-  export type ChunkData = Chunk | PendingChunk;
 }
 
 class ChunkMap {
@@ -320,4 +282,52 @@ class ChunkMap {
 
   private _map = new PairMap<number, number, ChunkMap.ChunkData>();
   private _parameters: Required<ChunkMap.Parameters>;
+}
+
+namespace ChunkMap {
+  export type Parameters = {
+    rowChunkSize: number;
+    numRows: number;
+    colChunkSize: number;
+    numCols: number;
+  };
+
+  export type ChunkIdx = {
+    chunkRowIdx: number;
+    chunkColIdx: number;
+  };
+
+  export type CellIdx = {
+    rowIdx: number;
+    colIdx: number;
+  };
+
+  export type Chunk = {
+    data: Arrow.Table;
+    startRow: number;
+    startCol: number;
+    readonly type: "chunk";
+  };
+
+  export function makeChunk(chunk: Omit<Chunk, "type">): Chunk {
+    return {
+      ...chunk,
+      type: "chunk",
+    };
+  }
+
+  export type PendingChunk = {
+    promise: Promise<void>;
+    reason: "query" | "prefetch";
+    readonly type: "pending";
+  };
+
+  export function makePendingChunk(chunk: Omit<PendingChunk, "type">): PendingChunk {
+    return {
+      ...chunk,
+      type: "pending",
+    };
+  }
+
+  export type ChunkData = Chunk | PendingChunk;
 }
