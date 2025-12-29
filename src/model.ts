@@ -38,14 +38,14 @@ export class ArrowModel extends DataModel {
     super();
 
     this._loadingParams = {
-      rowChunkSize: 512,
+      rowChunkSize: 100,
       colChunkSize: 24,
       loadingRepr: "",
       nullRepr: "",
       ...loadingOptions,
       prefetchFactors: {
-        rowPrefetchFactor: 10,
-        colPrefetchFactor: 10,
+        rowPrefetchFactor: 16,
+        colPrefetchFactor: 16,
         ...loadingOptions.prefetchFactors,
       },
     };
