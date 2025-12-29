@@ -112,8 +112,12 @@ export class ArrowModel extends DataModel {
     switch (region) {
       case "body":
         return this.dataBody(row, column);
-      case "column-header":
-        return this.schema.names[column].toString();
+      case "column-header": {
+        // This is to showcase that we can put additional information in the column header but it
+        // does not look good. HuggingFace dataset has some good inspiration.
+        const field = this.schema.fields[column];
+        return `${field.name} (${field.type}${field.nullable ? " | null" : ""})`;
+      }
       case "row-header":
         return row.toString();
       case "corner-header":
