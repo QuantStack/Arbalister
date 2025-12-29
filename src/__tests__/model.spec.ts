@@ -27,17 +27,13 @@ async function fetchStatsMocked(_params: Req.StatsOptions): Promise<Req.StatsRes
 async function fetchTableMocked(params: Req.TableOptions): Promise<Arrow.Table> {
   let table: Arrow.Table = MOCK_TABLE;
 
-  if (params.row_chunk !== undefined && params.row_chunk_size !== undefined) {
-    const start = params.row_chunk * params.row_chunk_size;
-    const end = start + params.row_chunk_size;
-    table = table.slice(start, end);
+  if (params.start_row !== undefined && params.end_row !== undefined) {
+    table = table.slice(params.start_row, params.end_row);
   }
 
-  if (params.col_chunk !== undefined && params.col_chunk_size !== undefined) {
+  if (params.start_col !== undefined && params.end_col !== undefined) {
     const colNames = table.schema.fields.map((field) => field.name);
-    const start = params.col_chunk * params.col_chunk_size;
-    const end = start + params.col_chunk_size;
-    const selectedCols = colNames.slice(start, end);
+    const selectedCols = colNames.slice(params.start_col, params.end_col);
     table = table.select(selectedCols);
   }
 

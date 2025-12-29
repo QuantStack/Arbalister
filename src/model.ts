@@ -150,18 +150,23 @@ export class ArrowModel extends DataModel {
   private async fetchThenStoreChunk(chunkIdx: ChunkMap.ChunkIdx): Promise<void> {
     const { chunkRowIdx, chunkColIdx } = chunkIdx;
 
+    const startRow = chunkRowIdx * this._loadingParams.rowChunkSize;
+    const endRow = startRow + this._loadingParams.rowChunkSize;
+    const startCol = chunkColIdx * this._loadingParams.colChunkSize;
+    const endCol = startCol + this._loadingParams.colChunkSize;
+
     const table = await fetchTable({
       path: this._loadingParams.path,
-      row_chunk_size: this._loadingParams.rowChunkSize,
-      row_chunk: chunkRowIdx,
-      col_chunk_size: this._loadingParams.colChunkSize,
-      col_chunk: chunkColIdx,
+      start_row: startRow,
+      end_row: endRow,
+      start_col: startCol,
+      end_col: endCol,
       ...this._fileOptions,
     });
     const chunk: ChunkMap.Chunk = ChunkMap.makeChunk({
       data: table,
-      startRow: chunkRowIdx * this._loadingParams.rowChunkSize,
-      startCol: chunkColIdx * this._loadingParams.colChunkSize,
+      startRow,
+      startCol,
     });
 
     this.storeChunkData(chunkIdx, chunk);

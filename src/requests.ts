@@ -122,10 +122,10 @@ export async function fetchStats(
 
 export interface TableOptions {
   path: string;
-  row_chunk_size?: number;
-  row_chunk?: number;
-  col_chunk_size?: number;
-  col_chunk?: number;
+  start_row?: number;
+  end_row?: number;
+  start_col?: number;
+  end_col?: number;
 }
 
 /**
@@ -137,10 +137,10 @@ export async function fetchTable(
   params: Readonly<TableOptions & FileReadOptions>,
 ): Promise<Arrow.Table> {
   const queryKeys = [
-    "row_chunk_size",
-    "row_chunk",
-    "col_chunk_size",
-    "col_chunk",
+    "start_row",
+    "end_row",
+    "start_col",
+    "end_col",
     "delimiter",
     "table_name",
   ] as const;
