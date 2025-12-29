@@ -7,12 +7,18 @@ import { fetchFileInfo, fetchStats, fetchTable } from "./requests";
 import type { FileInfo, FileReadOptions } from "./file-options";
 
 export namespace ArrowModel {
+  export interface PrefetchFactors {
+    rowPrefetchFactor?: number;
+    colPrefetchFactor?: number;
+  }
+
   export interface LoadingOptions {
     path: string;
     rowChunkSize?: number;
     colChunkSize?: number;
     loadingRepr?: string;
     nullRepr?: string;
+    prefetchFactors?: PrefetchFactors;
   }
 }
 
@@ -37,6 +43,11 @@ export class ArrowModel extends DataModel {
       loadingRepr: "",
       nullRepr: "",
       ...loadingOptions,
+      prefetchFactors: {
+        rowPrefetchFactor: 10,
+        colPrefetchFactor: 10,
+        ...loadingOptions.prefetchFactors,
+      },
     };
     this._fileOptions = fileOptions;
     this._fileInfo = fileInfo;
@@ -147,13 +158,22 @@ export class ArrowModel extends DataModel {
     return this._loadingParams.loadingRepr;
   }
 
-  private async fetchThenStoreChunk(chunkIdx: ChunkMap.ChunkIdx): Promise<void> {
+  private async fetchThenStoreChunk(
+    chunkIdx: ChunkMap.ChunkIdx,
+    factors: Required<ArrowModel.PrefetchFactors> = { rowPrefetchFactor: 1, colPrefetchFactor: 1 },
+  ): Promise<void> {
     const { chunkRowIdx, chunkColIdx } = chunkIdx;
 
     const startRow = chunkRowIdx * this._loadingParams.rowChunkSize;
-    const endRow = startRow + this._loadingParams.rowChunkSize;
+    const endRow = Math.min(
+      startRow + this._loadingParams.rowChunkSize * factors.rowPrefetchFactor,
+      this._numRows,
+    );
     const startCol = chunkColIdx * this._loadingParams.colChunkSize;
-    const endCol = startCol + this._loadingParams.colChunkSize;
+    const endCol = Math.min(
+      startCol + this._loadingParams.colChunkSize * factors.colPrefetchFactor,
+      this._numCols,
+    );
 
     const table = await fetchTable({
       path: this._loadingParams.path,
@@ -169,11 +189,20 @@ export class ArrowModel extends DataModel {
       startCol,
     });
 
-    this.storeChunkData(chunkIdx, chunk);
+    this.storeChunkData(chunkIdx, chunk, factors);
   }
 
-  private storeChunkData(chunkIdx: ChunkMap.ChunkIdx, data: ChunkMap.ChunkData) {
-    this._chunks.set(chunkIdx, data);
+  private storeChunkData(
+    chunkIdx: ChunkMap.ChunkIdx,
+    data: ChunkMap.ChunkData,
+    factors: Required<ArrowModel.PrefetchFactors> = { rowPrefetchFactor: 1, colPrefetchFactor: 1 },
+  ) {
+    const { chunkRowIdx, chunkColIdx } = chunkIdx;
+    for (let r = 0; r < factors.rowPrefetchFactor; r++) {
+      for (let c = 0; c < factors.colPrefetchFactor; c++) {
+        this._chunks.set({ chunkRowIdx: chunkRowIdx + r, chunkColIdx: chunkColIdx + c }, data);
+      }
+    }
   }
 
   private emitChangedChunk(chunkIdx: ChunkMap.ChunkIdx) {
@@ -208,24 +237,34 @@ export class ArrowModel extends DataModel {
 
     const nextRowsChunkIdx: ChunkMap.ChunkIdx = { chunkRowIdx: chunkRowIdx + 1, chunkColIdx };
     if (!this._chunks.has(nextRowsChunkIdx) && this._chunks.chunkIsValid(nextRowsChunkIdx)) {
-      promise = promise.then((_) => this.fetchThenStoreChunk(nextRowsChunkIdx));
+      const rowFactors = {
+        rowPrefetchFactor: this._loadingParams.prefetchFactors.rowPrefetchFactor,
+        colPrefetchFactor: 1,
+      };
+      promise = promise.then((_) => this.fetchThenStoreChunk(nextRowsChunkIdx, rowFactors));
       this.storeChunkData(
         nextRowsChunkIdx,
         ChunkMap.makePendingChunk({ promise, reason: "prefetch" }),
+        rowFactors,
       );
     }
 
     const nextColsChunkIdx: ChunkMap.ChunkIdx = { chunkRowIdx, chunkColIdx: chunkColIdx + 1 };
     if (!this._chunks.has(nextColsChunkIdx) && this._chunks.chunkIsValid(nextColsChunkIdx)) {
-      promise = promise.then((_) => this.fetchThenStoreChunk(nextColsChunkIdx));
+      const colFactors = {
+        rowPrefetchFactor: 1,
+        colPrefetchFactor: this._loadingParams.prefetchFactors.colPrefetchFactor,
+      };
+      promise = promise.then((_) => this.fetchThenStoreChunk(nextColsChunkIdx, colFactors));
       this.storeChunkData(
         nextColsChunkIdx,
         ChunkMap.makePendingChunk({ promise, reason: "prefetch" }),
+        colFactors,
       );
     }
   }
 
-  private readonly _loadingParams: Required<ArrowModel.LoadingOptions>;
+  private readonly _loadingParams: DeepRequired<ArrowModel.LoadingOptions>;
   private readonly _fileInfo: FileInfo;
   private _fileOptions: FileReadOptions;
 
@@ -356,3 +395,5 @@ namespace ChunkMap {
 
   export type ChunkData = Chunk | PendingChunk;
 }
+
+type DeepRequired<T> = T extends object ? { [K in keyof T]-?: DeepRequired<T[K]> } : T;
