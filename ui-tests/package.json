@@ -4,7 +4,7 @@
   "description": "JupyterLab arbalister Integration Tests",
   "private": true,
   "scripts": {
-    "start": "jupyter lab --config jupyter_server_test_config.py",
+    "start": "jupyter lab --config jupyter_server_test_config.py --port 53729",
     "test": "jlpm playwright test",
     "test:update": "jlpm playwright test --update-snapshots"
   },
