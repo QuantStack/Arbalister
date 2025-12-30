@@ -2705,7 +2705,7 @@ packages:
 - pypi: ./
   name: arbalister
   version: 0.1.0
-  sha256: b031ec0809472c609b5de425e4d1f8d55ad22174176bf2325634627a4d7810c7
+  sha256: e580c9dc65dc77381fce3febafe572e71fe902974eabb347ce83435d019b6561
   requires_dist:
   - adbc-driver-manager
   - adbc-driver-sqlite

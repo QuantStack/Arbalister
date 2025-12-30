@@ -215,8 +215,34 @@ description = "Test server extension with pytest."
 cmd = "npx --no jest --coverage"
 description = "Test client extension with Jest."
 
+# UI-tests
+
+[tool.pixi.feature.test.tasks.playwright]
+cwd = "ui-tests/"
+cmd = "jlpm playwright"
+description = "Execute playwright commands"
+depends-on = [
+  { task = "jlpm-build", args = ["prod"] },
+  "install-ui-tests",
+  "install-browsers",
+]
+
+[tool.pixi.feature.test.tasks.test-ui]
+description = "Test the extension UI with playwright."
+depends-on = [
+  { task = "jlpm-build", args = ["prod"] },
+  "install-ui-tests",
+  "install-browsers",
+  { task = "playwright", args = ["test"] },
+]
+
+[tool.pixi.feature.dev.tasks.jlpm-ui]
+description = "Run Jupyter lab package manager inside the UI test directory."
+cwd = "ui-tests/"
+cmd = "jlpm"
+
 [tool.pixi.feature.test.tasks.test]
-depends-on = ["test-pytest", "test-jest"]
+depends-on = ["test-pytest", "test-jest", "test-ui"]
 description = "Run all tests."
 
 # All
@@ -236,6 +262,8 @@ vscode-langservers-extracted = ">=4.10"
 typescript-language-server = ">=5.1"
 typos-lsp = "*"
 commitlint-rs = "*"
+
+# Data generation
 
 [tool.pixi.feature.dev.tasks.gen-data]
 cmd = """
@@ -274,16 +302,18 @@ curl -L -o data/samples/linkedIn.csv \
 outputs = ["data/samples/*"]
 description = "Download different data files from the Internet."
 
+# Setup
 
 [tool.pixi.feature.dev.tasks.jlpm-install]
 cmd = "jlpm install"
-description = "Install NPM packages."
+description = "Install client-side required NPM packages."
 inputs = ["package.json", "yarn.lock"]
 outputs = [".yarn/install-state.gz"]
 
 [tool.pixi.feature.dev.tasks.jlpm-build]
 depends-on = ["jlpm-install"]
-cmd = "jlpm build"
+args = [{ arg = "target", default = "" }]
+cmd = "jlpm build{{ ':' if target | length > 0 }}{{ target }}"
 description = "Build Arbalister client package."
 inputs = ["src/", "style/"]
 
@@ -296,6 +326,20 @@ description = "Install extension in developer mode."
 cmd = "jupyter lab"
 depends-on = ["install-dev"]
 description = "Launch JupyterLab with the current extension installed."
+
+[tool.pixi.feature.dev.tasks.install-ui-tests]
+cwd = "ui-tests"
+cmd = "jlpm install"
+description = "Install NPM packages needed by UI tests."
+inputs = ["ui-tests/package.json", "ui-tests/yarn.lock"]
+outputs = ["ui-tests/.yarn/install-state.gz"]
+
+[tool.pixi.feature.dev.tasks.install-browsers]
+# The command is already smart enough to avoid downloading again
+cwd = "ui-tests"
+cmd = "jlpm playwright install"
+description = "Install web browsers though playwright."
+
 
 [tool.pixi.feature.dev.tasks]
 jlpm = { cmd = "jlpm", description = "Run Jupyter lab package manager." }

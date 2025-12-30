@@ -16,37 +16,17 @@ The default configuration will produce video for failing tests and an HTML repor
 
 ## Run the tests
 
-> All commands are assumed to be executed from the root directory
-
-To run the tests, you need to:
-
-1. Compile the extension:
+You can run all tests through ``pixi``.
+This will setup all required dependencies, including browsers downloads.
+You can control the location of the download with the environment variable ``PLAYWRIGHT_BROWSERS_PATH``.
 
 ```sh
-jlpm install
-jlpm build:prod
+pixi run test-ui
 ```
 
-> Check the extension is installed in JupyterLab.
-
-2. Install test dependencies (needed only once):
-
-```sh
-cd ./ui-tests
-jlpm install
-jlpm playwright install
-cd ..
-```
-
-3. Execute the [Playwright](https://playwright.dev/docs/intro) tests:
-
-```sh
-cd ./ui-tests
-jlpm playwright test
-```
-
-Test results will be shown in the terminal. In case of any test failures, the test report
-will be opened in your browser at the end of the tests execution; see
+Test results will be shown in the terminal.
+In case of any test failures, the test report will be opened in your browser at the end of the
+tests execution; see
 [Playwright documentation](https://playwright.dev/docs/test-reporters#html-reporter)
 for configuring that behavior.
 
@@ -57,103 +37,39 @@ for configuring that behavior.
 If you are comparing snapshots to validate your tests, you may need to update
 the reference snapshots stored in the repository. To do that, you need to:
 
-1. Compile the extension:
-
 ```sh
-jlpm install
-jlpm build:prod
-```
-
-> Check the extension is installed in JupyterLab.
-
-2. Install test dependencies (needed only once):
-
-```sh
-cd ./ui-tests
-jlpm install
-jlpm playwright install
-cd ..
-```
-
-3. Execute the [Playwright](https://playwright.dev/docs/intro) command:
-
-```sh
-cd ./ui-tests
-jlpm playwright test -u
+pixi run test-ui -u
 ```
 
 > Some discrepancy may occurs between the snapshots generated on your computer and
-> the one generated on the CI. To ease updating the snapshots on a PR, you can
-> type `please update playwright snapshots` to trigger the update by a bot on the CI.
+> the one generated on the CI.
+> To ease updating the snapshots on a PR, you can type `please update playwright snapshots` to
+> trigger the update by a bot on the CI.
 > Once the bot has computed new snapshots, it will commit them to the PR branch.
 
 ## Create tests
 
-> All commands are assumed to be executed from the root directory
-
 To create tests, the easiest way is to use the code generator tool of playwright:
 
-1. Compile the extension:
+Start the server with ``pixi``
 
 ```sh
-jlpm install
-jlpm build:prod
-```
-
-> Check the extension is installed in JupyterLab.
-
-2. Install test dependencies (needed only once):
-
-```sh
-cd ./ui-tests
-jlpm install
-jlpm playwright install
-cd ..
-```
-
-3. Start the server:
-
-```sh
-cd ./ui-tests
-jlpm start
+pixi run jlpm-ui start
 ```
 
 4. Execute the [Playwright code generator](https://playwright.dev/docs/codegen) in **another terminal**:
 
 ```sh
-cd ./ui-tests
-jlpm playwright codegen localhost:8888
+pixi run playwright codegen localhost:53729
 ```
 
 ## Debug tests
 
-> All commands are assumed to be executed from the root directory
-
-To debug tests, a good way is to use the inspector tool of playwright:
-
-1. Compile the extension:
+To debug tests, a good way is to use the inspector tool of playwright.
+Execute the Playwright tests in [debug mode](https://playwright.dev/docs/debug):
 
 ```sh
-jlpm install
-jlpm build:prod
-```
-
-> Check the extension is installed in JupyterLab.
-
-2. Install test dependencies (needed only once):
-
-```sh
-cd ./ui-tests
-jlpm install
-jlpm playwright install
-cd ..
-```
-
-3. Execute the Playwright tests in [debug mode](https://playwright.dev/docs/debug):
-
-```sh
-cd ./ui-tests
-jlpm playwright test --debug
+pixi run test-ui --debug
 ```
 
 ## Upgrade Playwright and the browsers
@@ -161,7 +77,6 @@ jlpm playwright test --debug
 To update the web browser versions, you must update the package `@playwright/test`:
 
 ```sh
-cd ./ui-tests
-jlpm up "@playwright/test"
-jlpm playwright install
+pixi run jlpm-ui up "@playwright/test"
+pixi run playwright install
 ```
