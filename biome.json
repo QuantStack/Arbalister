@@ -3,6 +3,7 @@
     "includes": [
       "**",
       "!**/node_modules/**/*",
+      "!**/package.json",
       "!.yarn/**/*",
       "!.pixi/**/*",
       "!.vscode/**/*",

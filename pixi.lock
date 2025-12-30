@@ -688,7 +688,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/babel-2.17.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports.asyncio.runner-1.2.0-pyh5ded981_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/beautifulsoup4-4.14.3-pyha770c72_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/biome-2.3.8-hb17b654_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/biome-2.3.10-hb17b654_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/black-25.1.0-pyh866005b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bleach-6.3.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bleach-with-css-6.3.0-h5f6438b_0.conda
@@ -962,7 +962,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/babel-2.17.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports.asyncio.runner-1.2.0-pyh5ded981_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/beautifulsoup4-4.14.3-pyha770c72_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/biome-2.3.8-hd876f12_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/biome-2.3.10-hd876f12_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/black-25.1.0-pyh866005b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bleach-6.3.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bleach-with-css-6.3.0-h5f6438b_0.conda
@@ -1228,7 +1228,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/babel-2.17.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports.asyncio.runner-1.2.0-pyh5ded981_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/beautifulsoup4-4.14.3-pyha770c72_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/biome-2.3.8-h782dfd4_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/biome-2.3.10-h782dfd4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/black-25.1.0-pyh866005b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bleach-6.3.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bleach-with-css-6.3.0-h5f6438b_0.conda
@@ -1488,7 +1488,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/babel-2.17.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/backports.asyncio.runner-1.2.0-pyh5ded981_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/beautifulsoup4-4.14.3-pyha770c72_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/biome-2.3.8-h18a1a76_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/biome-2.3.10-h18a1a76_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/black-25.1.0-pyh866005b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bleach-6.3.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/bleach-with-css-6.3.0-h5f6438b_0.conda
@@ -2704,7 +2704,7 @@ packages:
   timestamp: 1733332433806
 - pypi: ./
   name: arbalister
-  version: 0.1.0
+  version: 0.2.0.dev0
   sha256: e580c9dc65dc77381fce3febafe572e71fe902974eabb347ce83435d019b6561
   requires_dist:
   - adbc-driver-manager
@@ -3929,22 +3929,22 @@ packages:
   - pkg:pypi/beautifulsoup4?source=hash-mapping
   size: 90399
   timestamp: 1764520638652
-- conda: https://conda.anaconda.org/conda-forge/linux-64/biome-2.3.8-hb17b654_0.conda
-  sha256: 49745d5af3f7e0d75cdc39263b277ef57b8ec5c26e3aaaeebc12a4449345ded7
-  md5: b42157ec44e2a6376484aa166e7a57d0
+- conda: https://conda.anaconda.org/conda-forge/linux-64/biome-2.3.10-hb17b654_0.conda
+  sha256: 247a337a9e4b3aea4763ca11e2a63399bcd7738e8740c45462e84622e491e34f
+  md5: 5f31d9ae2b561e621617d090aee7bdcc
   depends:
-  - libgcc >=14
   - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
   constrains:
   - __glibc >=2.17
   license: MIT
   license_family: MIT
   purls: []
-  size: 13071608
-  timestamp: 1764256603984
-- conda: https://conda.anaconda.org/conda-forge/osx-64/biome-2.3.8-hd876f12_0.conda
-  sha256: 242542c1cc7296e7430cad9f86d27bf62dc8bfbb491b5492a7ef2bcfb6b06f17
-  md5: 0e4ee3dd043672e1fc8dc8b7c6be63f9
+  size: 13173150
+  timestamp: 1765998851408
+- conda: https://conda.anaconda.org/conda-forge/osx-64/biome-2.3.10-hd876f12_0.conda
+  sha256: d93491daa517429061574ff709fa96260f47415af7915c852f23f41b54440866
+  md5: 9c82deee199840cb2ef6046db128133a
   depends:
   - __osx >=10.15
   - libiconv >=1.18,<2.0a0
@@ -3953,11 +3953,11 @@ packages:
   license: MIT
   license_family: MIT
   purls: []
-  size: 13061385
-  timestamp: 1764256756207
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/biome-2.3.8-h782dfd4_0.conda
-  sha256: 0a82b49aa122aa22179b9db32f5cdec50e5bfded5752d1da904f8fb84e5c7e40
-  md5: 629802b676e755e3949593b231a3a65d
+  size: 13144296
+  timestamp: 1765999072393
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/biome-2.3.10-h782dfd4_0.conda
+  sha256: 32acd17e71ac1d055f3a49b93eb3f518a9696ac16bb2291d6883f68254b0db08
+  md5: ba66af2918b83d15db9e424f9f5a9599
   depends:
   - __osx >=11.0
   - libiconv >=1.18,<2.0a0
@@ -3966,23 +3966,20 @@ packages:
   license: MIT
   license_family: MIT
   purls: []
-  size: 12228990
-  timestamp: 1764256814453
-- conda: https://conda.anaconda.org/conda-forge/win-64/biome-2.3.8-h18a1a76_0.conda
-  sha256: d629fac49beb8b83d0f51869b659d52bf678b64df43a930e0d27d823915a49d8
-  md5: f05f3a78440d531e491cf05f9291c842
+  size: 12310067
+  timestamp: 1765998947870
+- conda: https://conda.anaconda.org/conda-forge/win-64/biome-2.3.10-h18a1a76_0.conda
+  sha256: 5e10f35f9ee1123f27c10629a03f368454bb86cbb3800d36c9a8bf6463d10c29
+  md5: 8ad2ecd0a4bf628981fe2025129a24ef
   depends:
-  - vc >=14.3,<15
-  - vc14_runtime >=14.44.35208
-  - ucrt >=10.0.20348.0
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   - ucrt >=10.0.20348.0
   license: MIT
   license_family: MIT
   purls: []
-  size: 12614694
-  timestamp: 1764256622264
+  size: 12543687
+  timestamp: 1765998871902
 - conda: https://conda.anaconda.org/conda-forge/noarch/black-25.1.0-pyh866005b_0.conda
   sha256: c68f110cd491dc839a69e340930862e54c00fb02cede5f1831fcf8a253bd68d2
   md5: b9b0c42e7316aa6043bdfd49883955b8
