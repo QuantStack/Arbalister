@@ -2704,15 +2704,15 @@ packages:
   timestamp: 1733332433806
 - pypi: ./
   name: arbalister
-  version: 0.2.0.dev3
-  sha256: c319395e9cac115c099599c86b9194a634906ac3af29bd9baeb2321ea17e1034
+  version: 0.2.0
+  sha256: b91d1ed4f4a99fa646caafef38024a74ae706df4270f68f4974a7229ff7ccf33
   requires_dist:
-  - adbc-driver-manager
-  - adbc-driver-sqlite
   - datafusion>=40.0
   - jupyter-server>=2.4.0,<3
   - pyarrow>=20.0
-  requires_python: '>=3.9'
+  - adbc-driver-manager ; extra == 'sqlite'
+  - adbc-driver-sqlite ; extra == 'sqlite'
+  requires_python: '>=3.12'
 - conda: https://conda.anaconda.org/conda-forge/noarch/argon2-cffi-25.1.0-pyhd8ed1ab_0.conda
   sha256: bea62005badcb98b1ae1796ec5d70ea0fc9539e7d59708ac4e7d41e2f4bb0bad
   md5: 8ac12aff0860280ee0cff7fa2cf63f3b

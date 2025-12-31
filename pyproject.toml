@@ -10,7 +10,7 @@ build-backend = "hatchling.build"
 name = "arbalister"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 classifiers = [
   "Framework :: Jupyter",
   "Framework :: Jupyter :: JupyterLab",
@@ -25,14 +25,9 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
-dependencies = [
-  "jupyter_server>=2.4.0,<3",
-  "pyarrow>=20.0",
-  "datafusion>=40.0",
-  # Optional dependencies
-  "adbc_driver_manager",
-  "adbc_driver_sqlite",
-]
+dependencies = ["jupyter_server>=2.4.0,<3", "pyarrow>=20.0", "datafusion>=40.0"]
+[project.optional-dependencies]
+sqlite = ["adbc_driver_manager", "adbc_driver_sqlite"]
 
 [tool.hatch.version]
 source = "nodejs"
@@ -123,6 +118,7 @@ nodejs = "*"
 jupyter_server = "*"
 pyarrow = "*"
 datafusion = "*"
+# Optional dependencies
 adbc-driver-manager = "*"
 adbc-driver-sqlite = "*"
 
