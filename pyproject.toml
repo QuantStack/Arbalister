@@ -72,7 +72,8 @@ source_dir = "src"
 build_dir = "arbalister/labextension"
 
 [tool.jupyter-releaser.options]
-version_cmd = "hatch version"
+version-cmd = "hatch version"
+release-message = "release: Release {version}"
 
 [tool.jupyter-releaser.hooks]
 before-build-npm = [
