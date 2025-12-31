@@ -1,8 +1,6 @@
 name: Enforce PR label
 
 on:
-  # Use pull_request_target to have write permissions for PRs from forks
-  # This is safe because we only read the PR title (not execute fork code)
   pull_request_target:
     types: [labeled, unlabeled, opened, edited, synchronize]
 
@@ -17,6 +15,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # WARN: With `pull_request_target` it is unsafe to execute user code, we execute
+          # pixi/commitlint from target branch.
+          ref: ${{ github.event.pull_request.base.sha }}
       - name: Setup Pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
