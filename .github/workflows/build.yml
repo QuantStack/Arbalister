@@ -20,7 +20,7 @@ jobs:
       - name: Setup Pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          pixi-version: v0.60.0
+          pixi-version: v0.62.2
           cache: true
           manifest-path: pyproject.toml
       - name: Run checks and formatters through pre-commit
@@ -35,7 +35,7 @@ jobs:
       - name: Setup Pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          pixi-version: v0.60.0
+          pixi-version: v0.62.2
           cache: true
           manifest-path: pyproject.toml
       - name: Test server extension
