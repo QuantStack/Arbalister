@@ -94,6 +94,14 @@ export class ArrowModel extends DataModel {
     return this._schema;
   }
 
+  get numRows(): number {
+    return this._numRows;
+  }
+
+  get numCols(): number {
+    return this._numCols;
+  }
+
   columnCount(region: DataModel.ColumnRegion): number {
     if (region === "body") {
       return this._numCols;

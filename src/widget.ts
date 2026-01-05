@@ -8,63 +8,84 @@ import {
   DataGrid,
   TextRenderer,
 } from "@lumino/datagrid";
-import { ConflatableMessage, MessageLoop } from "@lumino/messaging";
 import { Debouncer } from "@lumino/polling";
 import { Panel } from "@lumino/widgets";
 import type { DocumentRegistry, IDocumentWidget } from "@jupyterlab/docregistry";
 import type * as DataGridModule from "@lumino/datagrid";
-import type { ISignal } from "@lumino/signaling";
-import type { ScrollBar } from "@lumino/widgets";
+import type { IMessageHandler, Message } from "@lumino/messaging";
 
 import { FileType } from "./file-types";
 import { ArrowModel } from "./model";
 import { createToolbar } from "./toolbar";
 import type { FileInfo, FileReadOptions } from "./file-options";
 
-/* grid: DataGrid instance */
+/**
+ * DataGrid that intercepts scroll-request messages and debounce them on large changes.
+ */
+class DebouncedDataGrid extends DataGrid {
+  constructor(options: DataGrid.IOptions & { scrollThreshold: number; debounceDelay: number }) {
+    super(options);
 
-function installDebouncedScrollBarHook(grid: DataGrid, delay = 100) {
-  // Access the internal vertical scrollbar and its thumbMoved signal
-  // biome-ignore lint/suspicious/noExplicitAny: Hacking into private property
-  const vScrollBar = (grid as any)._vScrollBar as ScrollBar;
-  // biome-ignore lint/suspicious/noExplicitAny: Hacking into private property
-  const thumbMoved = (vScrollBar as any).thumbMoved as ISignal<ScrollBar, void>;
+    this._scrollThresholdY = options.scrollThreshold;
+    this._scrollThresholdX = options.scrollThreshold;
 
-  // Get the original handler method from the grid
-  // biome-ignore lint/suspicious/noExplicitAny: Hacking into private property
-  const originalHandler = (grid as any)._onThumbMoved as (sender: ScrollBar) => void;
+    this._scrollDebouncer = new Debouncer((handler: IMessageHandler, msg: Message) => {
+      super.messageHook(handler, msg);
+    }, options.debounceDelay);
+  }
 
-  // Disconnect the original handler
-  thumbMoved.disconnect(originalHandler, grid);
+  setScrollThresholds(thresholdY: number, thresholdX: number): void {
+    this._scrollThresholdY = thresholdY;
+    this._scrollThresholdX = thresholdX;
+  }
 
-  // Create a debouncer that posts the scroll request after the delay
-  // The debouncer ensures the last event is always processed
-  const debouncer = new Debouncer(() => {
-    MessageLoop.postMessage(grid.viewport, new ConflatableMessage("scroll-request"));
-  }, delay);
+  messageHook(handler: IMessageHandler, msg: Message): boolean {
+    if (handler === this.viewport && msg.type === "scroll-request") {
+      // Calculate the percentage change in vertical scroll position
+      const scrollChangeY = Math.abs(this.scrollY - this._previousScrollY);
+      const scrollChangePercentY = this.maxScrollY > 0 ? scrollChangeY / this.maxScrollY : 0;
 
-  // Handler that invokes the debouncer on each thumb move
-  const debouncedHandler = () => {
-    void debouncer.invoke();
-  };
+      // Calculate the percentage change in horizontal scroll position
+      const scrollChangeX = Math.abs(this.scrollX - this._previousScrollX);
+      const scrollChangePercentX = this.maxScrollX > 0 ? scrollChangeX / this.maxScrollX : 0;
 
-  // Connect our debounced handler
-  thumbMoved.connect(debouncedHandler);
+      // Check if either direction exceeds its threshold
+      const shouldDebounceY = scrollChangePercentY > this._scrollThresholdY;
+      const shouldDebounceX = scrollChangePercentX > this._scrollThresholdX;
 
-  // Return cleanup function
-  return () => {
-    // Disconnect our handler
-    thumbMoved.disconnect(debouncedHandler);
-    // Reconnect the original handler
-    thumbMoved.connect(originalHandler, grid);
-    // Dispose the debouncer
-    debouncer.dispose();
-  };
+      if (shouldDebounceY || shouldDebounceX) {
+        // Large scroll change - debounce it
+        void this._scrollDebouncer.invoke(handler, msg);
+        this._previousScrollY = this.scrollY;
+        this._previousScrollX = this.scrollX;
+        // Don't process immediately, return false to stop propagation
+        return false;
+      } else {
+        // Small scroll change - process immediately
+        this._previousScrollY = this.scrollY;
+        this._previousScrollX = this.scrollX;
+        return super.messageHook(handler, msg);
+      }
+    }
+
+    return super.messageHook(handler, msg);
+  }
+
+  dispose(): void {
+    this._scrollDebouncer.dispose();
+    super.dispose();
+  }
+
+  private _scrollDebouncer: Debouncer<void>;
+  private _previousScrollY: number = 0;
+  private _previousScrollX: number = 0;
+  private _scrollThresholdY: number;
+  private _scrollThresholdX: number;
 }
 
 export namespace ArrowGridViewer {
-  export interface Options {
-    path: string;
+  export interface Options extends ArrowModel.LoadingOptions {
+    debounceDelay?: number;
   }
 }
 
@@ -76,13 +97,20 @@ export class ArrowGridViewer extends Panel {
     this.addClass("arrow-viewer");
 
     this._defaultStyle = DataGrid.defaultStyle;
-    this._grid = new DataGrid({
+
+    // Start with a conservative default threshold that will be updated when model is loaded
+    const defaultScrollThreshold = 0.01;
+    const debounceDelay = options.debounceDelay ?? 300;
+
+    this._grid = new DebouncedDataGrid({
       defaultSizes: {
         rowHeight: 24,
         columnWidth: 144,
         rowHeaderWidth: 64,
         columnHeaderHeight: 36,
       },
+      scrollThreshold: defaultScrollThreshold,
+      debounceDelay,
     });
     this._grid.addClass("arrow-grid-viewer");
     this._grid.headerVisibility = "all";
@@ -96,8 +124,6 @@ export class ArrowGridViewer extends Panel {
     };
 
     this.addWidget(this._grid);
-
-    installDebouncedScrollBarHook(this._grid, 100);
 
     this._ready = this.initialize();
   }
@@ -164,10 +190,19 @@ export class ArrowGridViewer extends Panel {
 
   private async _updateGrid() {
     try {
-      const dataModel = await ArrowModel.fromRemoteFileInfo({ path: this.path });
+      const dataModel = await ArrowModel.fromRemoteFileInfo(this._options);
       await dataModel.ready;
       this._grid.dataModel = dataModel;
       this._grid.selectionModel = new BasicSelectionModel({ dataModel });
+
+      // Calculate scroll debounce thresholds based on chunk sizes
+      const rowChunkSize = this._options.rowChunkSize ?? 256;
+      const colChunkSize = this._options.colChunkSize ?? 24;
+      const numRows = dataModel.numRows;
+      const numCols = dataModel.numCols;
+      const scrollThresholdY = numRows > 0 ? rowChunkSize / numRows : 0.01;
+      const scrollThresholdX = numCols > 0 ? colChunkSize / numCols : 0.01;
+      (this._grid as DebouncedDataGrid).setScrollThresholds(scrollThresholdY, scrollThresholdX);
     } catch (error) {
       const trans = Dialog.translator.load("jupyterlab");
       const buttons = [
