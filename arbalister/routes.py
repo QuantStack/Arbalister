@@ -263,9 +263,13 @@ def setup_route_handlers(web_app: jupyter_server.serverapp.ServerWebApplication)
     context = dn.SessionContext(make_datafusion_config())
 
     handlers = [
-        (url_path_join(base_url, r"arrow/stream/([^?]*)"), IpcRouteHandler, {"context": context}),
-        (url_path_join(base_url, r"arrow/stats/([^?]*)"), StatsRouteHandler, {"context": context}),
-        (url_path_join(base_url, r"file/info/([^?]*)"), FileInfoRouteHandler, {"context": context}),
+        (url_path_join(base_url, r"arbalister/arrow/stream/([^?]*)"), IpcRouteHandler, {"context": context}),
+        (url_path_join(base_url, r"arbalister/arrow/stats/([^?]*)"), StatsRouteHandler, {"context": context}),
+        (
+            url_path_join(base_url, r"arbalister/file/info/([^?]*)"),
+            FileInfoRouteHandler,
+            {"context": context},
+        ),
     ]
 
     web_app.add_handlers(host_pattern, handlers)  # type: ignore[no-untyped-call]

@@ -25,7 +25,7 @@ export interface FileInfoResponse {
 }
 
 export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<FileInfoResponse> {
-  const response = await fetch(`/file/info/${params.path}`);
+  const response = await fetch(`/arbalister/file/info/${params.path}`);
   if (!response.ok) {
     throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
   }
@@ -85,7 +85,7 @@ export async function fetchStats(
     }
   }
 
-  const response = await fetch(`/arrow/stats/${params.path}?${query.toString()}`);
+  const response = await fetch(`/arbalister/arrow/stats/${params.path}?${query.toString()}`);
   if (!response.ok) {
     throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
   }
@@ -154,7 +154,7 @@ export async function fetchTable(
     }
   }
 
-  const url = `/arrow/stream/${params.path}?${query.toString()}`;
+  const url = `/arbalister/arrow/stream/${params.path}?${query.toString()}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Error communicating with the Arbalister server: ${response.status}`);

@@ -169,7 +169,7 @@ async def test_ipc_route_limit(
 ) -> None:
     """Test fetching a file returns the limited rows and columns in IPC."""
     response = await jp_fetch(
-        "arrow/stream",
+        "arbalister/arrow/stream",
         str(table_file),
         params={
             k: v
@@ -209,7 +209,7 @@ async def test_stats_route(
 ) -> None:
     """Test fetching a file returns the correct metadata in Json."""
     response = await jp_fetch(
-        "arrow/stats/",
+        "arbalister/arrow/stats/",
         str(table_file),
         params={k: v for k, v in dataclasses.asdict(file_params).items() if v is not None},
     )
@@ -235,7 +235,7 @@ async def test_file_info_route_sqlite(
     file_format: ff.FileFormat,
 ) -> None:
     """Test fetching file info for SQLite files returns table names."""
-    response = await jp_fetch("file/info/", str(table_file))
+    response = await jp_fetch("arbalister/file/info/", str(table_file))
 
     assert response.code == 200
     assert response.headers["Content-Type"] == "application/json; charset=UTF-8"
