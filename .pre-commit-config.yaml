@@ -68,6 +68,7 @@ repos:
         name: "Run typos through pixi"
         entry: pixi run check-typos
         language: system
+        exclude: "^.*\\.png"
       - id: pixi-mypy
         name: "Run mypy through pixi"
         entry: pixi run check-mypy
