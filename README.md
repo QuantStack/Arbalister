@@ -2,15 +2,39 @@
 
 [![Github Actions Status](https://github.com/QuantStack/Arbalister/workflows/Build/badge.svg)](https://github.com/QuantStack/Arbalister/actions/workflows/build.yml)
 
-This viewer lets you double click on many file types supported in the Apache Arrow ecosystem
-to automatically view it as tabular data (Csv, Parquet, Avro, Orc, Ipc).
+A JupyterLab extension for viewing tabular data files.
+Double-click to open Parquet, Avro, ORC, SQLite, and other Arrow-compatible formats directly in JupyterLab without writing code.
 
-For library authors, the server extension serves files in the Arrow IPC stream format.
-It can be reused to provide other type of application specific viewers (*e.g.* as time series, ...).
+![A Parquet file opened with Arbalister](assets/arbalister.png)
 
-This extension is composed two packages both called `arbalister`:
-- A Python server extension available on PyPI;
-- A Typescript client extension available on NPM.
+## Features
+
+**Existing**:
+- 🗂️ **Supported formats**: Parquet, CSV, Avro, ORC, SQLite, Arrow IPC
+- ⚡ **Lazy loading**: Streams chunks of data on-demand, handles files larger than memory
+- ⏱️ **Prefetching**: Load next chunk for smooth scrolling
+- ⚙️ **Reading options**: Interactive toolbar for CSV delimiters, SQLite table selection, etc.
+- 🔌 **Extensible**: Server extension provides Arrow IPC streams for building custom viewers
+
+**Planned (contributions welcome)**:
+- ☁️ **S3 and data lakes**: Support for Apache Iceberg, Delta Lake, and other cloud-native table formats over object storage
+- 🌐 **Database viewer**: Non-file (URL) database viewer
+- 💻 **WASM/JupyterLite support**: Run Arbalister in the browser without a Python backend
+- 📈 **Alternative clients**: Custom non default viewers for time-series and geospacial data
+- 🔎 **Filters**: Search and filter data with ease
+
+## Architecture
+
+Data is divided into chunks across rows and columns.
+The client requests the chunks needed for the current viewport.
+The server reads the relevant portion using DataFusion and returns it as Arrow IPC stream format.
+Background pre-fetching ensures smooth scrolling.
+
+![Arbalister client-server architecture](assets/architecture.svg)
+
+This extension is composed of two packages both called `arbalister`:
+- A Python server extension available on PyPI
+- A TypeScript client extension available on NPM
 
 ## Requirements
 
