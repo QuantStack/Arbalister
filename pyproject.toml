@@ -251,6 +251,7 @@ description = "Run all formatters, code checks, and tests."
 [tool.pixi.feature.dev.dependencies]
 curl = "*"
 jupyterlab = ">=4.4"
+jupyterhub = "*"
 jupyterlab-lsp = "*"
 python-lsp-server-base = ">=1.11.0"
 python-lsp-ruff = ">=2.2.1"
@@ -323,6 +324,11 @@ description = "Install extension in developer mode."
 cmd = "jupyter lab"
 depends-on = ["install-dev"]
 description = "Launch JupyterLab with the current extension installed."
+
+[tool.pixi.feature.dev.tasks.serve-hub-dev]
+cmd = "jupyterhub --no-db --JupyterHub.Authenticator.allow_all=true"
+depends-on = ["install-dev"]
+description = "Launch JupyterHub with the current extension installed."
 
 [tool.pixi.feature.dev.tasks.install-ui-tests]
 cwd = "ui-tests"
