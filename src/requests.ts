@@ -1,3 +1,6 @@
+import { URLExt } from "@jupyterlab/coreutils";
+import { ServerConnection } from "@jupyterlab/services";
+
 import { tableFromIPC } from "apache-arrow";
 import type * as Arrow from "apache-arrow";
 
@@ -25,7 +28,9 @@ export interface FileInfoResponse {
 }
 
 export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<FileInfoResponse> {
-  const response = await fetch(`/arbalister/file/info/${params.path}`);
+  const settings = ServerConnection.makeSettings();
+  const url = URLExt.join(settings.baseUrl, "arbalister/file/info", params.path);
+  const response = await ServerConnection.makeRequest(url, {}, settings);
   if (!response.ok) {
     throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
   }
@@ -85,7 +90,10 @@ export async function fetchStats(
     }
   }
 
-  const response = await fetch(`/arbalister/arrow/stats/${params.path}?${query.toString()}`);
+  const settings = ServerConnection.makeSettings();
+  const url =
+    URLExt.join(settings.baseUrl, "arbalister/arrow/stats", params.path) + `?${query.toString()}`;
+  const response = await ServerConnection.makeRequest(url, {}, settings);
   if (!response.ok) {
     throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
   }
@@ -154,8 +162,10 @@ export async function fetchTable(
     }
   }
 
-  const url = `/arbalister/arrow/stream/${params.path}?${query.toString()}`;
-  const response = await fetch(url);
+  const settings = ServerConnection.makeSettings();
+  const url =
+    URLExt.join(settings.baseUrl, "arbalister/arrow/stream", params.path) + `?${query.toString()}`;
+  const response = await ServerConnection.makeRequest(url, {}, settings);
   if (!response.ok) {
     throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
   }
