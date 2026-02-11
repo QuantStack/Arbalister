@@ -2,6 +2,41 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.2.1
+
+([Full Changelog](https://github.com/QuantStack/Arbalister/compare/v0.2.0...56bf5191411b8d904816a09db20d80da6d72e6a6))
+
+### New features added
+
+- feat(client): Add tests [#57](https://github.com/QuantStack/Arbalister/pull/57) ([@AnastasiaSliusar](https://github.com/AnastasiaSliusar), [@AntoinePrv](https://github.com/AntoinePrv))
+- feat: Add arbalister prefix to API routes [#54](https://github.com/QuantStack/Arbalister/pull/54) ([@AntoinePrv](https://github.com/AntoinePrv), [@claude](https://github.com/claude))
+- feat(client): Add column and row numbers [#53](https://github.com/QuantStack/Arbalister/pull/53) ([@AnastasiaSliusar](https://github.com/AnastasiaSliusar), [@AntoinePrv](https://github.com/AntoinePrv))
+- feat: Mark optional dependencies as optional [#51](https://github.com/QuantStack/Arbalister/pull/51) ([@AntoinePrv](https://github.com/AntoinePrv))
+- feat(client): Add debounce to scroll bar [#39](https://github.com/QuantStack/Arbalister/pull/39) ([@AntoinePrv](https://github.com/AntoinePrv))
+
+### Bugs fixed
+
+- fix: Use proper url constructor for JupyterHub [#61](https://github.com/QuantStack/Arbalister/pull/61) ([@AntoinePrv](https://github.com/AntoinePrv))
+
+### Maintenance and upkeep improvements
+
+- chore: Clean changelog [#50](https://github.com/QuantStack/Arbalister/pull/50) ([@AntoinePrv](https://github.com/AntoinePrv))
+
+### Documentation improvements
+
+- doc: Improve readme introduction [#58](https://github.com/QuantStack/Arbalister/pull/58) ([@AntoinePrv](https://github.com/AntoinePrv))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/QuantStack/Arbalister/graphs/contributors?from=2025-12-31&to=2026-02-11&type=c))
+
+@AnastasiaSliusar ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAnastasiaSliusar+updated%3A2025-12-31..2026-02-11&type=Issues)) | @AntoinePrv ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAntoinePrv+updated%3A2025-12-31..2026-02-11&type=Issues)) | @claude ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3Aclaude+updated%3A2025-12-31..2026-02-11&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.2.0
 
 ([Full Changelog](https://github.com/QuantStack/Arbalister/compare/v0.1.0...d74ac8f76297b5507d509ced3fe5af3149333adb))
@@ -59,5 +94,3 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ([GitHub contributors page for this release](https://github.com/QuantStack/Arbalister/graphs/contributors?from=2025-12-10&to=2025-12-31&type=c))
 
 @AnastasiaSliusar ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAnastasiaSliusar+updated%3A2025-12-10..2025-12-31&type=Issues)) | @AntoinePrv ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAntoinePrv+updated%3A2025-12-10..2025-12-31&type=Issues)) | @claude ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3Aclaude+updated%3A2025-12-10..2025-12-31&type=Issues)) | @Copilot ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3ACopilot+updated%3A2025-12-10..2025-12-31&type=Issues))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
