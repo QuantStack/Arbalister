@@ -1,4 +1,5 @@
 import codecs
+import importlib.util
 import pathlib
 from typing import Any, Callable
 
@@ -8,6 +9,19 @@ import pyarrow as pa
 from . import file_format as ff
 
 ReadCallable = Callable[..., dn.DataFrame]
+
+# Optional third-party modules required to read each format. Formats not listed here
+# rely only on the core dependencies and are always readable.
+_READER_REQUIREMENTS: dict[ff.FileFormat, tuple[str, ...]] = {
+    ff.FileFormat.Sqlite: ("adbc_driver_manager", "adbc_driver_sqlite"),
+}
+
+
+def missing_requirements(format: ff.FileFormat) -> list[str]:
+    """Return the modules required to read the format that are not installed."""
+    return [
+        module for module in _READER_REQUIREMENTS.get(format, ()) if importlib.util.find_spec(module) is None
+    ]
 
 
 def _read_csv(

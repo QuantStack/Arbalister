@@ -16,6 +16,7 @@ import type { IMessageHandler, Message } from "@lumino/messaging";
 
 import { FileType } from "./file-types";
 import { ArrowModel } from "./model";
+import { fetchFileSupport } from "./requests";
 import { createToolbar } from "./toolbar";
 import type { FileInfo, FileReadOptions } from "./file-options";
 
@@ -81,6 +82,17 @@ class DebouncedDataGrid extends DataGrid {
   private _previousScrollX: number = 0;
   private _scrollThresholdY: number;
   private _scrollThresholdX: number;
+}
+
+/**
+ * Error thrown when a file path cannot be opened because its type is unsupported,
+ * as reported by the server's support check. Retrying does not help in this case.
+ */
+class UnsupportedFileError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnsupportedFileError";
+  }
 }
 
 export namespace ArrowGridViewer {
@@ -211,6 +223,11 @@ export class ArrowGridViewer extends Panel {
 
   private async _updateGrid() {
     try {
+      const support = await fetchFileSupport({ path: this._options.path });
+      if (!support.supported) {
+        throw new UnsupportedFileError(support.reason ?? "This file type is not supported.");
+      }
+
       const dataModel = await ArrowModel.fromRemoteFileInfo(this._options);
       await dataModel.ready;
       this._grid.dataModel = dataModel;
@@ -226,18 +243,28 @@ export class ArrowGridViewer extends Panel {
       (this._grid as DebouncedDataGrid).setScrollThresholds(scrollThresholdY, scrollThresholdX);
     } catch (error) {
       const trans = Dialog.translator.load("jupyterlab");
-      const buttons = [
-        Dialog.cancelButton({ label: trans.__("Close") }),
-        Dialog.okButton({ label: trans.__("Retry") }),
-      ];
+      const message = typeof error === "string" ? error : (error as Error).message;
+
+      // Retrying will not help when the file type itself is unsupported.
+      if (error instanceof UnsupportedFileError) {
+        await showDialog({
+          title: "Cannot open file",
+          body: message,
+          buttons: [Dialog.cancelButton({ label: trans.__("Close") })],
+        });
+        throw error;
+      }
+
       const confirm = await showDialog({
         title: "Failed to initialized ArrowGridViewer",
-        body: typeof error === "string" ? error : (error as Error).message,
-        buttons,
+        body: message,
+        buttons: [
+          Dialog.cancelButton({ label: trans.__("Close") }),
+          Dialog.okButton({ label: trans.__("Retry") }),
+        ],
       });
-      const shouldRetry = confirm.button.accept;
 
-      if (shouldRetry) {
+      if (confirm.button.accept) {
         await this._updateGrid();
       } else {
         // Re-throw so the underlying cause propagates through `ready` rather than

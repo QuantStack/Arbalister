@@ -242,6 +242,42 @@ class FileInfoRouteHandler(BaseRouteHandler):
                 await self.finish(dataclasses.asdict(no_response))
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class FileSupportResponse:
+    """Whether a file can be read, and why not when it cannot."""
+
+    supported: bool
+    reason: str | None = None
+
+
+class FileSupportRouteHandler(BaseRouteHandler):
+    """A handler to check whether a file path is supported before opening it."""
+
+    @tornado.web.authenticated
+    async def get(self, path: str) -> None:
+        """HTTP GET return whether the file is supported."""
+        file = self.data_file(path)
+
+        try:
+            file_format = ff.FileFormat.from_filename(file)
+        except ValueError as error:
+            response = FileSupportResponse(supported=False, reason=str(error))
+            await self.finish(dataclasses.asdict(response))
+            return
+
+        missing = abw.missing_requirements(file_format)
+        if missing:
+            reason = (
+                f"Reading {file_format} files requires additional package(s) that are not "
+                f"installed: {', '.join(missing)}."
+            )
+            response = FileSupportResponse(supported=False, reason=reason)
+        else:
+            response = FileSupportResponse(supported=True)
+
+        await self.finish(dataclasses.asdict(response))
+
+
 def make_datafusion_config() -> dn.SessionConfig:
     """Return the datafusion config."""
     config = (
@@ -268,6 +304,11 @@ def setup_route_handlers(web_app: jupyter_server.serverapp.ServerWebApplication)
         (
             url_path_join(base_url, r"arbalister/file/info/([^?]*)"),
             FileInfoRouteHandler,
+            {"context": context},
+        ),
+        (
+            url_path_join(base_url, r"arbalister/file/supported/([^?]*)"),
+            FileSupportRouteHandler,
             {"context": context},
         ),
     ]
