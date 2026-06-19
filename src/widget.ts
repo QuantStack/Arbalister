@@ -129,7 +129,7 @@ export class ArrowGridViewer extends Panel {
   }
 
   get ready(): Promise<void> {
-    return this._ready.then(() => this.dataModel.ready);
+    return this._ready.then(() => this._requireDataModel().ready);
   }
 
   get revealed(): Promise<void> {
@@ -140,20 +140,28 @@ export class ArrowGridViewer extends Panel {
     return this._options.path;
   }
 
-  private get dataModel(): ArrowModel {
-    return this._grid.dataModel as ArrowModel;
+  private get dataModel(): ArrowModel | null {
+    return this._grid.dataModel as ArrowModel | null;
+  }
+
+  private _requireDataModel(): ArrowModel {
+    const dataModel = this.dataModel;
+    if (dataModel === null) {
+      throw new Error("ArrowGridViewer failed to load: the data model could not be initialized.");
+    }
+    return dataModel;
   }
 
   get fileInfo(): Readonly<FileInfo> {
-    return this.dataModel.fileInfo;
+    return this._requireDataModel().fileInfo;
   }
 
   get fileReadOptions(): Readonly<FileReadOptions> {
-    return this.dataModel.fileReadOptions;
+    return this._requireDataModel().fileReadOptions;
   }
 
   set fileReadOptions(fileOptions: FileReadOptions) {
-    this.dataModel.fileReadOptions = fileOptions;
+    this._requireDataModel().fileReadOptions = fileOptions;
   }
 
   updateFileReadOptions(fileOptionsUpdate: Partial<FileReadOptions>) {
@@ -164,11 +172,11 @@ export class ArrowGridViewer extends Panel {
   }
 
   get numCols(): number {
-    return this.dataModel.numCols;
+    return this._requireDataModel().numCols;
   }
 
   get numRows(): number {
-    return this.dataModel.numRows;
+    return this._requireDataModel().numRows;
   }
 
   /**
@@ -192,8 +200,13 @@ export class ArrowGridViewer extends Panel {
 
   protected async initialize(): Promise<void> {
     this._defaultStyle = DataGrid.defaultStyle;
-    await this._updateGrid();
-    this._revealed.resolve(undefined);
+    try {
+      await this._updateGrid();
+    } finally {
+      // Always resolve `revealed` so the document widget's reveal promise settles,
+      // even when loading failed; `ready` still rejects with the underlying cause.
+      this._revealed.resolve(undefined);
+    }
   }
 
   private async _updateGrid() {
@@ -226,6 +239,10 @@ export class ArrowGridViewer extends Panel {
 
       if (shouldRetry) {
         await this._updateGrid();
+      } else {
+        // Re-throw so the underlying cause propagates through `ready` rather than
+        // surfacing later as an opaque "dataModel is null" error.
+        throw error;
       }
     }
   }
