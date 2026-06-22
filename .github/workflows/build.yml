@@ -88,6 +88,7 @@ jobs:
     name: Integration tests
     needs: test-unit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/pw-browsers
     steps:
