@@ -18,10 +18,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Setup Pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+        uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          pixi-version: v0.62.2
+          pixi-version: v0.70.2
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
           manifest-path: pyproject.toml
       - name: Run checks and formatters through pre-commit
         run: pixi run pre-commit run --all-files
