@@ -36,7 +36,7 @@ def _read_ipc(ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[s
     import pyarrow.feather
 
     #  table = pyarrow.feather.read_table(path, {**{"memory_map": True}, **kwargs})
-    table = pyarrow.feather.read_table(path, **kwargs)
+    table = pyarrow.feather.read_table(path, **kwargs)  # type: ignore[no-untyped-call]
     return ctx.from_arrow(table)
 
 
@@ -45,7 +45,7 @@ def _read_orc(ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[s
     # Evolution for native datafusion reader
     import pyarrow.orc
 
-    table = pyarrow.orc.read_table(path, **kwargs)
+    table = pyarrow.orc.read_table(path, **kwargs)  # type: ignore[no-untyped-call]
     return ctx.from_arrow(table)
 
 
@@ -142,11 +142,11 @@ def get_table_writer(format: ff.FileFormat) -> WriteCallable:
                 memory_pool: pa.MemoryPool | None = None,
                 **kwargs: dict[str, Any],
             ) -> None:
-                pyarrow.csv.write_csv(
+                pyarrow.csv.write_csv(  # type: ignore[attr-defined]
                     data=data,
                     output_file=str(output_file),
                     memory_pool=memory_pool,
-                    write_options=pyarrow.csv.WriteOptions(**kwargs),
+                    write_options=pyarrow.csv.WriteOptions(**kwargs),  # type: ignore[attr-defined]
                 )
 
             out = write_csv

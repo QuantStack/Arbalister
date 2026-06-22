@@ -51,9 +51,9 @@ def _generate_coordinate_table_slice(
         .with_columns(
             *[
                 dnf.concat(
-                    dn.lit("("),  # type: ignore[no-untyped-call]
+                    dn.lit("("),
                     dnf.col("row"),
-                    dn.lit(f", {j})"),  # type: ignore[no-untyped-call]
+                    dn.lit(f", {j})"),
                 ).alias(f"col_{j}")
                 for j in range(num_cols)
             ]
@@ -75,7 +75,7 @@ def _sink_coordinate_table(
         print(f"Generating {row_start}", flush=True)
         row_end = min(row_start + chunk_size, num_rows)
         table = _generate_coordinate_table_slice(row_start, row_end, num_cols=num_cols, ctx=ctx)
-        writer.write(table)
+        writer.write(table)  # type: ignore[no-untyped-call]
 
 
 def sink_coordinate_table(
@@ -87,9 +87,9 @@ def sink_coordinate_table(
     ctx = dn.SessionContext()
     print("Generating schema", flush=True)
     schema = _generate_coordinate_table_slice(0, 1, num_cols=num_cols, ctx=ctx).schema
-    writer = paq.ParquetWriter(path, schema)
+    writer = paq.ParquetWriter(path, schema)  # type: ignore[no-untyped-call]
     _sink_coordinate_table(num_rows=num_rows, num_cols=num_cols, writer=writer, ctx=ctx)
-    writer.close()
+    writer.close()  # type: ignore[no-untyped-call]
 
 
 def configure_command_single(cmd: argparse.ArgumentParser) -> argparse.ArgumentParser:
