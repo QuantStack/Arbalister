@@ -44,6 +44,7 @@ repos:
         entry: pixi run fmt-biome""
         language: system
         types_or: [javascript, jsx, ts, tsx, json, css]
+        exclude: "(^|/)package\\.json$"
 
       # Linters
       - id: pixi-biome
@@ -51,6 +52,7 @@ repos:
         entry: pixi run check-biome
         language: system
         types_or: [javascript, jsx, ts, tsx, json]
+        exclude: "(^|/)package\\.json$"
       - id: pixi-typescript
         name: Run typescript checks through pixi
         entry: pixi run check-typescript

@@ -1,4 +1,5 @@
 import codecs
+import importlib.util
 import pathlib
 from typing import Any, Callable
 
@@ -8,6 +9,19 @@ import pyarrow as pa
 from . import file_format as ff
 
 ReadCallable = Callable[..., dn.DataFrame]
+
+# Optional third-party modules required to read each format. Formats not listed here
+# rely only on the core dependencies and are always readable.
+_READER_REQUIREMENTS: dict[ff.FileFormat, tuple[str, ...]] = {
+    ff.FileFormat.Sqlite: ("adbc_driver_manager", "adbc_driver_sqlite"),
+}
+
+
+def missing_requirements(format: ff.FileFormat) -> list[str]:
+    """Return the modules required to read the format that are not installed."""
+    return [
+        module for module in _READER_REQUIREMENTS.get(format, ()) if importlib.util.find_spec(module) is None
+    ]
 
 
 def _read_csv(
@@ -22,7 +36,7 @@ def _read_ipc(ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[s
     import pyarrow.feather
 
     #  table = pyarrow.feather.read_table(path, {**{"memory_map": True}, **kwargs})
-    table = pyarrow.feather.read_table(path, **kwargs)
+    table = pyarrow.feather.read_table(path, **kwargs)  # type: ignore[no-untyped-call]
     return ctx.from_arrow(table)
 
 
@@ -31,7 +45,7 @@ def _read_orc(ctx: dn.SessionContext, path: str | pathlib.Path, **kwargs: dict[s
     # Evolution for native datafusion reader
     import pyarrow.orc
 
-    table = pyarrow.orc.read_table(path, **kwargs)
+    table = pyarrow.orc.read_table(path, **kwargs)  # type: ignore[no-untyped-call]
     return ctx.from_arrow(table)
 
 
@@ -128,11 +142,11 @@ def get_table_writer(format: ff.FileFormat) -> WriteCallable:
                 memory_pool: pa.MemoryPool | None = None,
                 **kwargs: dict[str, Any],
             ) -> None:
-                pyarrow.csv.write_csv(
+                pyarrow.csv.write_csv(  # type: ignore[attr-defined]
                     data=data,
                     output_file=str(output_file),
                     memory_pool=memory_pool,
-                    write_options=pyarrow.csv.WriteOptions(**kwargs),
+                    write_options=pyarrow.csv.WriteOptions(**kwargs),  # type: ignore[attr-defined]
                 )
 
             out = write_csv

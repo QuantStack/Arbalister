@@ -229,6 +229,37 @@ async def test_stats_route(
     assert table.schema.names == full_table.schema.names
 
 
+async def test_file_supported_route(
+    jp_fetch: JpFetch,
+    table_file: pathlib.Path,
+) -> None:
+    """Test that a readable file is reported as supported."""
+    response = await jp_fetch("arbalister/file/supported/", str(table_file))
+
+    assert response.code == 200
+    assert response.headers["Content-Type"] == "application/json; charset=UTF-8"
+
+    payload = json.loads(response.body)
+    assert payload["supported"] is True
+    assert payload["reason"] is None
+
+
+async def test_file_supported_route_unknown_type(
+    jp_fetch: JpFetch,
+    jp_root_dir: pathlib.Path,
+) -> None:
+    """Test that an unknown file type is reported as unsupported with a reason."""
+    unknown = jp_root_dir / "data.unknown_ext"
+    unknown.write_text("nothing")
+
+    response = await jp_fetch("arbalister/file/supported/", "data.unknown_ext")
+
+    assert response.code == 200
+    payload = json.loads(response.body)
+    assert payload["supported"] is False
+    assert payload["reason"]
+
+
 async def test_file_info_route_sqlite(
     jp_fetch: JpFetch,
     table_file: pathlib.Path,

@@ -38,6 +38,27 @@ export async function fetchFileInfo(params: Readonly<FileInfoOptions>): Promise<
   return data;
 }
 
+/**
+ * Whether a file path can be opened, and the reason when it cannot.
+ */
+export interface FileSupportResponse {
+  supported: boolean;
+  reason: string | null;
+}
+
+export async function fetchFileSupport(
+  params: Readonly<FileInfoOptions>,
+): Promise<FileSupportResponse> {
+  const settings = ServerConnection.makeSettings();
+  const url = URLExt.join(settings.baseUrl, "arbalister/file/supported", params.path);
+  const response = await ServerConnection.makeRequest(url, {}, settings);
+  if (!response.ok) {
+    throw new Error(`Error communicating with the Arbalister server: ${response.status}`);
+  }
+  const data: FileSupportResponse = await response.json();
+  return data;
+}
+
 export interface StatsOptions {
   path: string;
 }

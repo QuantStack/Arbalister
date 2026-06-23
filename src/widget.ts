@@ -16,6 +16,7 @@ import type { IMessageHandler, Message } from "@lumino/messaging";
 
 import { FileType } from "./file-types";
 import { ArrowModel } from "./model";
+import { fetchFileSupport } from "./requests";
 import { createToolbar } from "./toolbar";
 import type { FileInfo, FileReadOptions } from "./file-options";
 
@@ -83,6 +84,17 @@ class DebouncedDataGrid extends DataGrid {
   private _scrollThresholdX: number;
 }
 
+/**
+ * Error thrown when a file path cannot be opened because its type is unsupported,
+ * as reported by the server's support check. Retrying does not help in this case.
+ */
+class UnsupportedFileError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnsupportedFileError";
+  }
+}
+
 export namespace ArrowGridViewer {
   export interface Options extends ArrowModel.LoadingOptions {
     debounceDelay?: number;
@@ -129,7 +141,7 @@ export class ArrowGridViewer extends Panel {
   }
 
   get ready(): Promise<void> {
-    return this._ready.then(() => this.dataModel.ready);
+    return this._ready.then(() => this._requireDataModel().ready);
   }
 
   get revealed(): Promise<void> {
@@ -140,20 +152,28 @@ export class ArrowGridViewer extends Panel {
     return this._options.path;
   }
 
-  private get dataModel(): ArrowModel {
-    return this._grid.dataModel as ArrowModel;
+  private get dataModel(): ArrowModel | null {
+    return this._grid.dataModel as ArrowModel | null;
+  }
+
+  private _requireDataModel(): ArrowModel {
+    const dataModel = this.dataModel;
+    if (dataModel === null) {
+      throw new Error("ArrowGridViewer failed to load: the data model could not be initialized.");
+    }
+    return dataModel;
   }
 
   get fileInfo(): Readonly<FileInfo> {
-    return this.dataModel.fileInfo;
+    return this._requireDataModel().fileInfo;
   }
 
   get fileReadOptions(): Readonly<FileReadOptions> {
-    return this.dataModel.fileReadOptions;
+    return this._requireDataModel().fileReadOptions;
   }
 
   set fileReadOptions(fileOptions: FileReadOptions) {
-    this.dataModel.fileReadOptions = fileOptions;
+    this._requireDataModel().fileReadOptions = fileOptions;
   }
 
   updateFileReadOptions(fileOptionsUpdate: Partial<FileReadOptions>) {
@@ -164,11 +184,11 @@ export class ArrowGridViewer extends Panel {
   }
 
   get numCols(): number {
-    return this.dataModel.numCols;
+    return this._requireDataModel().numCols;
   }
 
   get numRows(): number {
-    return this.dataModel.numRows;
+    return this._requireDataModel().numRows;
   }
 
   /**
@@ -192,12 +212,22 @@ export class ArrowGridViewer extends Panel {
 
   protected async initialize(): Promise<void> {
     this._defaultStyle = DataGrid.defaultStyle;
-    await this._updateGrid();
-    this._revealed.resolve(undefined);
+    try {
+      await this._updateGrid();
+    } finally {
+      // Always resolve `revealed` so the document widget's reveal promise settles,
+      // even when loading failed; `ready` still rejects with the underlying cause.
+      this._revealed.resolve(undefined);
+    }
   }
 
   private async _updateGrid() {
     try {
+      const support = await fetchFileSupport({ path: this._options.path });
+      if (!support.supported) {
+        throw new UnsupportedFileError(support.reason ?? "This file type is not supported.");
+      }
+
       const dataModel = await ArrowModel.fromRemoteFileInfo(this._options);
       await dataModel.ready;
       this._grid.dataModel = dataModel;
@@ -213,19 +243,33 @@ export class ArrowGridViewer extends Panel {
       (this._grid as DebouncedDataGrid).setScrollThresholds(scrollThresholdY, scrollThresholdX);
     } catch (error) {
       const trans = Dialog.translator.load("jupyterlab");
-      const buttons = [
-        Dialog.cancelButton({ label: trans.__("Close") }),
-        Dialog.okButton({ label: trans.__("Retry") }),
-      ];
+      const message = typeof error === "string" ? error : (error as Error).message;
+
+      // Retrying will not help when the file type itself is unsupported.
+      if (error instanceof UnsupportedFileError) {
+        await showDialog({
+          title: "Cannot open file",
+          body: message,
+          buttons: [Dialog.cancelButton({ label: trans.__("Close") })],
+        });
+        throw error;
+      }
+
       const confirm = await showDialog({
         title: "Failed to initialized ArrowGridViewer",
-        body: typeof error === "string" ? error : (error as Error).message,
-        buttons,
+        body: message,
+        buttons: [
+          Dialog.cancelButton({ label: trans.__("Close") }),
+          Dialog.okButton({ label: trans.__("Retry") }),
+        ],
       });
-      const shouldRetry = confirm.button.accept;
 
-      if (shouldRetry) {
+      if (confirm.button.accept) {
         await this._updateGrid();
+      } else {
+        // Re-throw so the underlying cause propagates through `ready` rather than
+        // surfacing later as an opaque "dataModel is null" error.
+        throw error;
       }
     }
   }
