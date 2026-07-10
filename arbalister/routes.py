@@ -130,12 +130,23 @@ class SchemaInfo:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
+class ColumnStats:
+    """Column stats for a parquet file."""
+
+    name: str
+    min: object | None = None
+    max: object | None = None
+    null_count: int | None = None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class StatsResponse:
     """File statistics returned in the stats route."""
 
     schema: SchemaInfo
     num_rows: int = 0
     num_cols: int = 0
+    columns_stats: list[ColumnStats] | None = None
 
 
 class StatsRouteHandler(BaseRouteHandler):
@@ -144,6 +155,13 @@ class StatsRouteHandler(BaseRouteHandler):
     @tornado.web.authenticated
     async def get(self, path: str) -> None:
         """HTTP GET return statistics."""
+        file = self.data_file(path)
+        file_format = ff.FileFormat.from_filename(file)
+
+        columns_stats = None
+        if file_format == ff.FileFormat.Parquet:
+            parquet_columns_stats = abw.get_parquet_column_stats(file)
+            columns_stats = [ColumnStats(**stats) for stats in parquet_columns_stats]
         df = self.dataframe(path)
 
         # FIXME this is not optimal for ORC/CSV where we can read_metadata, but it is not read
@@ -175,6 +193,7 @@ class StatsRouteHandler(BaseRouteHandler):
             num_cols=len(schema),
             num_rows=num_rows,
             schema=SchemaInfo(data=schema_64),
+            columns_stats=columns_stats,
         )
         await self.finish(dataclasses.asdict(response))
 
@@ -184,6 +203,7 @@ class SqliteFileInfo:
     """Sqlite specific information about a file."""
 
     table_names: list[str]
+    size_bytes: int | None = None
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -191,6 +211,7 @@ class CsvFileInfo:
     """Csv specific information about a file."""
 
     delimiters: list[str] = dataclasses.field(default_factory=lambda: [",", ";", "\\t", "|", "#"])
+    size_bytes: int | None = None
 
 
 FileInfo = SqliteFileInfo | CsvFileInfo
@@ -202,6 +223,7 @@ class FileInfoResponse[I, P]:
 
     info: I
     default_options: P
+    size_bytes: int | None = None
 
 
 CsvFileInfoResponse = FileInfoResponse[CsvFileInfo, CsvReadOptions]
@@ -219,12 +241,21 @@ class FileInfoRouteHandler(BaseRouteHandler):
         file = self.data_file(path)
         file_format = ff.FileFormat.from_filename(file)
 
+        df = self.dataframe(path)
+        df.schema()
+
+        try:
+            size_bytes = os.path.getsize(file)
+        except Exception:
+            size_bytes = None
+
         match file_format:
             case ff.FileFormat.Csv:
-                info = CsvFileInfo()
+                info = CsvFileInfo(size_bytes=size_bytes)
                 csv_response = CsvFileInfoResponse(
                     info=info,
                     default_options=CsvReadOptions(delimiter=info.delimiters[0]),
+                    size_bytes=size_bytes,
                 )
                 await self.finish(dataclasses.asdict(csv_response))
             case ff.FileFormat.Sqlite:
@@ -233,12 +264,13 @@ class FileInfoRouteHandler(BaseRouteHandler):
                 table_names = adbc.SqliteDataFrame.get_table_names(file)
 
                 sqlite_response = SqliteFileInfoResponse(
-                    info=SqliteFileInfo(table_names=table_names),
+                    info=SqliteFileInfo(table_names=table_names, size_bytes=size_bytes),
                     default_options=SqliteReadOptions(table_name=table_names[0]),
+                    size_bytes=size_bytes,
                 )
                 await self.finish(dataclasses.asdict(sqlite_response))
             case _:
-                no_response = NoFileInfoResponse(info=Empty(), default_options=Empty())
+                no_response = NoFileInfoResponse(info=Empty(), default_options=Empty(), size_bytes=size_bytes)
                 await self.finish(dataclasses.asdict(no_response))
 
 

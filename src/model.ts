@@ -24,9 +24,15 @@ export namespace ArrowModel {
 
 export class ArrowModel extends DataModel {
   static async fromRemoteFileInfo(loadingOptions: ArrowModel.LoadingOptions) {
-    const { info: fileInfo, default_options: fileOptions } = await fetchFileInfo({
+    const {
+      info: fileInfo,
+      default_options: fileOptions,
+      size_bytes,
+    } = await fetchFileInfo({
       path: loadingOptions.path,
     });
+
+    console.log("size_bytes", size_bytes);
     return new ArrowModel(loadingOptions, fileOptions, fileInfo);
   }
 
@@ -124,7 +130,9 @@ export class ArrowModel extends DataModel {
         // This is to showcase that we can put additional information in the column header but it
         // does not look good. HuggingFace dataset has some good inspiration.
         const field = this.schema.fields[column];
-        return `${field.name} (${field.type}${field.nullable ? " | null" : ""})`;
+        return `${field.name} 
+        (${field.type}${field.nullable ? " | null" : ""})
+        Rows: ${this._numRows}`;
       }
       case "row-header":
         return row.toString();
