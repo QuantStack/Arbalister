@@ -2,6 +2,33 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.2.2
+
+([Full Changelog](https://github.com/QuantStack/Arbalister/compare/v0.2.1...fcadc862972689f5352641a7ae1ae4aa161b1a92))
+
+### New features added
+
+- feat: Better unsupported file error [#63](https://github.com/QuantStack/Arbalister/pull/63) ([@AntoinePrv](https://github.com/AntoinePrv))
+
+### Bugs fixed
+
+- fix(server): Escape column names [#66](https://github.com/QuantStack/Arbalister/pull/66) ([@AntoinePrv](https://github.com/AntoinePrv))
+
+### Other merged PRs
+
+- Refactor conditions for updating snapshots in workflow [#64](https://github.com/QuantStack/Arbalister/pull/64) ([@JarLob](https://github.com/JarLob), [@AntoinePrv](https://github.com/AntoinePrv))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/QuantStack/Arbalister/graphs/contributors?from=2026-02-11&to=2026-09-09&type=c))
+
+@AntoinePrv ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAntoinePrv+updated%3A2026-02-11..2026-09-09&type=Issues)) | @JarLob ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AJarLob+updated%3A2026-02-11..2026-09-09&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.2.1
 
 ([Full Changelog](https://github.com/QuantStack/Arbalister/compare/v0.2.0...56bf5191411b8d904816a09db20d80da6d72e6a6))
@@ -34,8 +61,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ([GitHub contributors page for this release](https://github.com/QuantStack/Arbalister/graphs/contributors?from=2025-12-31&to=2026-02-11&type=c))
 
 @AnastasiaSliusar ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAnastasiaSliusar+updated%3A2025-12-31..2026-02-11&type=Issues)) | @AntoinePrv ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAntoinePrv+updated%3A2025-12-31..2026-02-11&type=Issues)) | @claude ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3Aclaude+updated%3A2025-12-31..2026-02-11&type=Issues))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.2.0
 
