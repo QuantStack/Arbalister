@@ -97,7 +97,7 @@ def _parse_value(value: Any, annotation: Any) -> Any:
 
 
 def build_dataclass[T](dataclass_type: type[T], callback: Callable[[str, Any], Any]) -> T:
-    """Build a dtaclass from its definition and a value-p[rovising callback."""
+    """Build a dataclass from its definition and a value-provising callback."""
     values: dict[str, Any] = {}
     for field in dataclasses.fields(cast(type[Any], dataclass_type)):
         default = (

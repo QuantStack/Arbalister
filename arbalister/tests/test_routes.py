@@ -71,10 +71,10 @@ def dummy_table_1(num_rows: int = 10) -> pa.Table:
 def dummy_table_2(num_rows: int = 13) -> pa.Table:
     """Generate a table with different fake data."""
     data = {
-        "id": list(range(num_rows)),
-        "flag": [random.choice([True, False]) for _ in range(num_rows)],
-        "letter": random.choices(string.ascii_letters, k=num_rows),
-        "score": [random.randint(0, 100) for _ in range(num_rows)],
+        "__id": list(range(num_rows)),
+        "Flag": [random.choice([True, False]) for _ in range(num_rows)],
+        "ASCII letter": random.choices(string.ascii_letters, k=num_rows),
+        "score 🏆": [random.randint(0, 100) for _ in range(num_rows)],
         "timestamp": [random.randint(1_600_000_000, 1_700_000_000) for _ in range(num_rows)],
     }
     table = pa.table(data)
