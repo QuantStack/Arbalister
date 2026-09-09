@@ -87,9 +87,14 @@ class SqliteDataFrame:
             if self._limit is not None and self._offset is not None
             else ""
         )
-        columns = self._select if self._select is not None else ["*"]
+
+        # Escape column names or default to wildcard
+        if self._select is not None:
+            columns = ",".join(f'"{c}"' for c in self._select)
+        else:
+            columns = "*"
 
         with adbc_sqlite.connect(self._path) as connection:
             with connection.cursor() as cursor:
-                cursor.execute(f'SELECT {",".join(columns)} FROM "{self._table_name}" {limit}')
+                cursor.execute(f'SELECT {columns} FROM "{self._table_name}" {limit}')
                 return cursor.fetch_arrow_table()
