@@ -59,9 +59,25 @@ def dummy_table_1(num_rows: int = 10) -> pa.Table:
     """Generate a table with fake data."""
     data = {
         "lower": random.choices(string.ascii_lowercase, k=num_rows),
-        "sequence": list(range(num_rows)),
-        "upper": random.choices(string.ascii_uppercase, k=num_rows),
-        "number": [random.random() for _ in range(num_rows)],
+        "some sequence": list(range(num_rows)),
+        "UPPER": random.choices(string.ascii_uppercase, k=num_rows),
+        "number 💯": [random.random() for _ in range(num_rows)],
+    }
+    table = pa.table(data)
+    return table
+
+
+@pytest.fixture(scope="module")
+def avro_table(num_rows: int = 10) -> pa.Table:
+    """Generate a table with fake data and Avro compatible column names.
+
+    Avro field names are restricted to ``[A-Za-z_][A-Za-z0-9_]*``.
+    """
+    data = {
+        "lower": random.choices(string.ascii_lowercase, k=num_rows),
+        "some_sequence": list(range(num_rows)),
+        "UPPER": random.choices(string.ascii_uppercase, k=num_rows),
+        "number_": [random.random() for _ in range(num_rows)],
     }
     table = pa.table(data)
     return table
@@ -82,9 +98,17 @@ def dummy_table_2(num_rows: int = 13) -> pa.Table:
 
 
 @pytest.fixture(scope="module")
-def full_table(file_params: ff.FileFormat, dummy_table_1: pa.Table, dummy_table_2: pa.Table) -> pa.Table:
+def full_table(
+    file_format: ff.FileFormat,
+    file_params: arb.routes.FileReadOptions,
+    dummy_table_1: pa.Table,
+    dummy_table_2: pa.Table,
+    avro_table: pa.Table,
+) -> pa.Table:
     """Return the full table on which we are executed queries."""
-    if isinstance(file_params, arb.routes.SqliteReadOptions):
+    if file_format == ff.FileFormat.Avro:
+        return avro_table
+    if isinstance(file_params, arb.routes.SqliteReadOptions) and file_params.table_name:
         return {
             "dummy_table_1": dummy_table_1,
             "dummy_table_2": dummy_table_2,
@@ -97,6 +121,7 @@ def table_file(
     jp_root_dir: pathlib.Path,
     dummy_table_1: pa.Table,
     dummy_table_2: pa.Table,
+    avro_table: pa.Table,
     file_format: ff.FileFormat,
     file_params: arb.routes.FileReadOptions,
 ) -> pathlib.Path:
@@ -105,6 +130,8 @@ def table_file(
     table_path = jp_root_dir / f"test.{str(file_format).lower()}"
 
     match file_format:
+        case ff.FileFormat.Avro:
+            write_table(avro_table, table_path)
         case ff.FileFormat.Csv:
             write_table(dummy_table_1, table_path, delimiter=getattr(file_params, "delimiter", ","))
         case ff.FileFormat.Sqlite:

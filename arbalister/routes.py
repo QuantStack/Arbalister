@@ -14,6 +14,7 @@ from jupyter_server.utils import url_path_join
 from . import arrow as abw
 from . import file_format as ff
 from . import params as params
+from . import utils as utils
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -104,8 +105,8 @@ class IpcRouteHandler(BaseRouteHandler):
             df = df.limit(count=count, offset=offset)
 
         if params.start_col is not None and params.end_col is not None:
-            col_names = df.schema().names
-            df = df.select(*col_names[params.start_col : params.end_col])
+            col_names = df.schema().names[params.start_col : params.end_col]
+            df = df.select(*(utils.escape(c) for c in col_names))
 
         table: pa.Table = df.to_arrow_table()
 
@@ -158,7 +159,7 @@ class StatsRouteHandler(BaseRouteHandler):
             # No dedicated exception type coming from DataFusion
             if str(e).startswith("DataFusion"):
                 first_col: str = schema.names[0]
-                batches = df.aggregate([], [dnf.count(dn.col(first_col))]).collect()
+                batches = df.aggregate([], [dnf.count(dn.col(utils.escape(first_col)))]).collect()
                 num_rows = batches[0].column(0)[0].as_py()
 
         # Create a zero-row IPC stream with the table schema

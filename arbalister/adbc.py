@@ -5,6 +5,8 @@ from typing import Any, Literal, Self
 import adbc_driver_sqlite.dbapi as adbc_sqlite
 import pyarrow as pa
 
+from . import utils as utils
+
 
 def write_sqlite(
     table: pa.Table,
@@ -57,7 +59,7 @@ class SqliteDataFrame:
 
         with adbc_sqlite.connect(str(path)) as connection:
             with connection.cursor() as cursor:
-                cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
+                cursor.execute(f"SELECT COUNT(*) FROM {utils.escape(table_name)}")
                 num_rows = cursor.fetchone()[0]  # type: ignore[index]
 
             schema = connection.adbc_get_table_schema(table_name)
@@ -88,13 +90,9 @@ class SqliteDataFrame:
             else ""
         )
 
-        # Escape column names or default to wildcard
-        if self._select is not None:
-            columns = ",".join(f'"{c}"' for c in self._select)
-        else:
-            columns = "*"
+        columns = ",".join(self._select) if self._select is not None else "*"
 
         with adbc_sqlite.connect(self._path) as connection:
             with connection.cursor() as cursor:
-                cursor.execute(f'SELECT {columns} FROM "{self._table_name}" {limit}')
+                cursor.execute(f"SELECT {columns} FROM {utils.escape(self._table_name)} {limit}")
                 return cursor.fetch_arrow_table()
