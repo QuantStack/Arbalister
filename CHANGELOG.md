@@ -2,6 +2,26 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.2.3
+
+([Full Changelog](https://github.com/QuantStack/Arbalister/compare/v0.2.2...b1a883036ea2db33611a727a96711dad128fd403))
+
+### Bugs fixed
+
+- fix: Table column name escape [#69](https://github.com/QuantStack/Arbalister/pull/69) ([@AntoinePrv](https://github.com/AntoinePrv))
+- fix(client): Bump fast-uri [#68](https://github.com/QuantStack/Arbalister/pull/68) ([@AntoinePrv](https://github.com/AntoinePrv))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/QuantStack/Arbalister/graphs/contributors?from=2026-09-09&to=2026-09-18&type=c))
+
+@AntoinePrv ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAntoinePrv+updated%3A2026-09-09..2026-09-18&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.2.2
 
 ([Full Changelog](https://github.com/QuantStack/Arbalister/compare/v0.2.1...fcadc862972689f5352641a7ae1ae4aa161b1a92))
@@ -26,8 +46,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ([GitHub contributors page for this release](https://github.com/QuantStack/Arbalister/graphs/contributors?from=2026-02-11&to=2026-09-09&type=c))
 
 @AntoinePrv ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AAntoinePrv+updated%3A2026-02-11..2026-09-09&type=Issues)) | @JarLob ([activity](https://github.com/search?q=repo%3AQuantStack%2FArbalister+involves%3AJarLob+updated%3A2026-02-11..2026-09-09&type=Issues))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.2.1
 
