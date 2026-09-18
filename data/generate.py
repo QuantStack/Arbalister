@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 import random
+import re
 
 import datafusion as dn
 import datafusion.functions as dnf
@@ -33,10 +34,10 @@ def generate_table(num_rows: int) -> pa.Table:
 
     gen = faker.Faker()
     data = {
-        "name": [gen.name() for _ in range(num_rows)],
-        "address": [gen.address().replace("\n", ", ") for _ in range(num_rows)],
-        "age": [gen.random_number(digits=2) for _ in range(num_rows)],
-        "id": [gen.uuid4() for _ in range(num_rows)],
+        "Name": [gen.name() for _ in range(num_rows)],
+        "Address 🏠": [gen.address().replace("\n", ", ") for _ in range(num_rows)],
+        '"Age"': [gen.random_number(digits=2) for _ in range(num_rows)],
+        "__id": [gen.uuid4() for _ in range(num_rows)],
     }
     return pa.table(data)
 
@@ -150,8 +151,16 @@ def shuffle_table(table: pa.Table, seed: int | None = None) -> pa.Table:
     return table.select(col_order).take(row_indices)
 
 
+def avro_compatible(table: pa.Table) -> pa.Table:
+    """Rename the columns to comply with Avro field names ``[A-Za-z_][A-Za-z0-9_]*``."""
+    names = [re.sub(r"[^A-Za-z0-9_]", "_", name) for name in table.column_names]
+    return table.rename_columns([n if re.match(r"[A-Za-z_]", n) else f"_{n}" for n in names])
+
+
 def save_table(table: pa.Table, path: pathlib.Path, file_type: ff.FileFormat) -> None:
     """Save a table to file with the given file type."""
+    if file_type == ff.FileFormat.Avro:
+        table = avro_compatible(table)
     path.parent.mkdir(exist_ok=True, parents=True)
     write_table = aa.get_table_writer(file_type)
     write_table(table, str(path))
